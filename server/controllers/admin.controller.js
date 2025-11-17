@@ -87,27 +87,244 @@ export const loginAdmin = async (req, res) => {
 // ==================== Analytics ====================
 export const getPlatformAnalytics = async (req, res) => {
   try {
-    const [managersCount, buyersCount, booksCount, ordersAgg, publishersCount] = await Promise.all([
+    // Get current date ranges
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+    const last30Days = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const last12Months = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
+
+    // Basic counts
+    const [managersCount, buyersCount, booksCount, publishersCount] = await Promise.all([
       Manager.countDocuments({ "moderation.status": "approved", "account.status": "active" }),
       getAllBuyers().then(b => b.length),
       Book.countDocuments(),
-      Order.aggregate([
-        { $match: {} },
-        { $group: { _id: null, revenue: { $sum: "$grandTotal" }, count: { $sum: 1 } } }
-      ]),
       Publisher.countDocuments({ "moderation.status": "approved" })
     ]);
 
-    const orders = (ordersAgg[0]?.count) || 0;
-    const ordersRevenue = (ordersAgg[0]?.revenue) || 0;
+    // Revenue aggregations
+    const [
+      totalRevenueAgg,
+      todayRevenueAgg,
+      weekRevenueAgg,
+      monthRevenueAgg,
+      yearRevenueAgg,
+      last30DaysRevenue,
+      last12MonthsRevenue,
+      ordersByStatus,
+      revenueByStatus
+    ] = await Promise.all([
+      Order.aggregate([
+        { $group: { _id: null, revenue: { $sum: "$grandTotal" }, count: { $sum: 1 } } }
+      ]),
+      Order.aggregate([
+        { $match: { createdAt: { $gte: startOfToday } } },
+        { $group: { _id: null, revenue: { $sum: "$grandTotal" }, count: { $sum: 1 } } }
+      ]),
+      Order.aggregate([
+        { $match: { createdAt: { $gte: startOfWeek } } },
+        { $group: { _id: null, revenue: { $sum: "$grandTotal" }, count: { $sum: 1 } } }
+      ]),
+      Order.aggregate([
+        { $match: { createdAt: { $gte: startOfMonth } } },
+        { $group: { _id: null, revenue: { $sum: "$grandTotal" }, count: { $sum: 1 } } }
+      ]),
+      Order.aggregate([
+        { $match: { createdAt: { $gte: startOfYear } } },
+        { $group: { _id: null, revenue: { $sum: "$grandTotal" }, count: { $sum: 1 } } }
+      ]),
+      // Last 30 days daily revenue
+      Order.aggregate([
+        { $match: { createdAt: { $gte: last30Days } } },
+        {
+          $group: {
+            _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+            revenue: { $sum: "$grandTotal" },
+            orders: { $sum: 1 }
+          }
+        },
+        { $sort: { _id: 1 } }
+      ]),
+      // Last 12 months revenue
+      Order.aggregate([
+        { $match: { createdAt: { $gte: last12Months } } },
+        {
+          $group: {
+            _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
+            revenue: { $sum: "$grandTotal" },
+            orders: { $sum: 1 }
+          }
+        },
+        { $sort: { _id: 1 } }
+      ]),
+      // Orders by status
+      Order.aggregate([
+        {
+          $group: {
+            _id: "$status",
+            count: { $sum: 1 }
+          }
+        }
+      ]),
+      // Revenue by order status
+      Order.aggregate([
+        {
+          $group: {
+            _id: "$status",
+            revenue: { $sum: "$grandTotal" }
+          }
+        }
+      ])
+    ]);
+
+    // Top Publishers by Revenue
+    const topPublishers = await Order.aggregate([
+      { $unwind: "$items" },
+      {
+        $group: {
+          _id: "$items.publisher",
+          revenue: { $sum: "$items.lineTotal" },
+          orders: { $sum: 1 },
+          booksSold: { $sum: "$items.quantity" }
+        }
+      },
+      { $sort: { revenue: -1 } },
+      { $limit: 10 },
+      {
+        $lookup: {
+          from: "publishers",
+          localField: "_id",
+          foreignField: "_id",
+          as: "publisherInfo"
+        }
+      },
+      { $unwind: "$publisherInfo" },
+      {
+        $project: {
+          _id: 1,
+          revenue: 1,
+          orders: 1,
+          booksSold: 1,
+          name: { $concat: ["$publisherInfo.firstname", " ", "$publisherInfo.lastname"] },
+          publishingHouse: "$publisherInfo.publishingHouse"
+        }
+      }
+    ]);
+
+    // Top Buyers by Spending
+    const topBuyers = await Order.aggregate([
+      {
+        $group: {
+          _id: "$buyer",
+          totalSpent: { $sum: "$grandTotal" },
+          orderCount: { $sum: 1 }
+        }
+      },
+      { $sort: { totalSpent: -1 } },
+      { $limit: 10 },
+      {
+        $lookup: {
+          from: "buyers",
+          localField: "_id",
+          foreignField: "_id",
+          as: "buyerInfo"
+        }
+      },
+      { $unwind: "$buyerInfo" },
+      {
+        $project: {
+          _id: 1,
+          totalSpent: 1,
+          orderCount: 1,
+          name: { $concat: ["$buyerInfo.firstname", " ", "$buyerInfo.lastname"] },
+          email: "$buyerInfo.email"
+        }
+      }
+    ]);
+
+    // Revenue breakdown
+    const revenueBreakdown = await Order.aggregate([
+      {
+        $group: {
+          _id: null,
+          itemsTotal: { $sum: "$itemsTotal" },
+          shipping: { $sum: "$shipping" },
+          tax: { $sum: "$tax" },
+          discount: { $sum: "$discount" }
+        }
+      }
+    ]);
+
+    // Calculate metrics
+    const totalOrders = totalRevenueAgg[0]?.count || 0;
+    const totalRevenue = totalRevenueAgg[0]?.revenue || 0;
+    const todayRevenue = todayRevenueAgg[0]?.revenue || 0;
+    const weekRevenue = weekRevenueAgg[0]?.revenue || 0;
+    const monthRevenue = monthRevenueAgg[0]?.revenue || 0;
+    const yearRevenue = yearRevenueAgg[0]?.revenue || 0;
+    const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+
+    // Format daily revenue trend (last 30 days)
+    const revenueTrend = last30DaysRevenue.map(item => ({
+      date: item._id,
+      revenue: item.revenue,
+      orders: item.orders
+    }));
+
+    // Format monthly revenue (last 12 months)
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const monthlyRevenue = last12MonthsRevenue.map(item => {
+      const [year, month] = item._id.split('-');
+      return {
+        month: `${monthNames[parseInt(month) - 1]} ${year}`,
+        revenue: item.revenue,
+        orders: item.orders
+      };
+    });
+
+    // Format order status data
+    const orderStatusData = ordersByStatus.map(item => ({
+      status: item._id,
+      count: item.count
+    }));
+
+    const revenueByStatusData = revenueByStatus.map(item => ({
+      status: item._id,
+      revenue: item.revenue
+    }));
 
     return res.status(200).json({
+      // Basic counts
       managers: managersCount,
       publishers: publishersCount,
       buyers: buyersCount,
       books: booksCount,
-      orders,
-      ordersRevenue
+      orders: totalOrders,
+      
+      // Revenue metrics
+      revenue: {
+        total: totalRevenue,
+        today: todayRevenue,
+        week: weekRevenue,
+        month: monthRevenue,
+        year: yearRevenue,
+        averageOrderValue: averageOrderValue,
+        breakdown: revenueBreakdown[0] || { itemsTotal: 0, shipping: 0, tax: 0, discount: 0 }
+      },
+      
+      // Trends
+      revenueTrend: revenueTrend,
+      monthlyRevenue: monthlyRevenue,
+      
+      // Orders analytics
+      ordersByStatus: orderStatusData,
+      revenueByStatus: revenueByStatusData,
+      
+      // Top performers
+      topPublishers: topPublishers,
+      topBuyers: topBuyers
     });
   } catch (error) {
     console.error("Error fetching platform analytics:", error);
