@@ -8,10 +8,13 @@ export const loginPostController = async (req, res) => {
     const result = await loginUser(email, password);
 
     if (result.code === 403) {
+      // If there's a specific message (banned, pending, rejected), use it
+      // Otherwise, it's a "user not found" case
+      const message = result.message || "User not found";
       return res.status(403).json({
         success: false,
-        message: "User not found",
-        data: null
+        message: message,
+        data: result.details || null
       });
     }
 

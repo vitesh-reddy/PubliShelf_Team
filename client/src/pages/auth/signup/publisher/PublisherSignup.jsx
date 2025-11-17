@@ -2,6 +2,16 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { signupPublisher } from "../../../../services/publisher.services.js";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../../../../components/ui/AlertDialog";
 
 const PublisherSignup = () => {
   const [formData, setFormData] = useState({
@@ -16,6 +26,7 @@ const PublisherSignup = () => {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -65,7 +76,7 @@ const PublisherSignup = () => {
         password
       });
       if (response.success) {
-        window.location.href = "/auth/login";
+        setShowSuccessDialog(true);
       } else {
         setError(response.message || "An unexpected error occurred.");
       }
@@ -259,6 +270,21 @@ const PublisherSignup = () => {
           </div>
         </form>
       </div>
+      {/* Success Dialog */}
+      <AlertDialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Signup Received</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your publisher account has been submitted for verification. You'll be able to log in once a manager approves your account.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => navigate('/auth/login')}>Go to Login</AlertDialogCancel>
+            <AlertDialogAction onClick={() => navigate('/auth/login')}>OK</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

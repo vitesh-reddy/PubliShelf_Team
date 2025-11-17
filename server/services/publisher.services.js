@@ -37,3 +37,16 @@ export const createPublisher = async ({ firstname, lastname, publishingHouse, em
 export const deletePublisherById = async (publisherId) => {
   return await Publisher.findByIdAndDelete(publisherId);
 };
+
+export const togglePublisherBan = async (publisherId) => {
+  const publisher = await Publisher.findById(publisherId);
+  if (!publisher) {
+    throw new Error("Publisher not found");
+  }
+  if (publisher.account?.status === "banned") {
+    publisher.account = { status: "active", by: null, at: null, reason: null };
+  } else {
+    publisher.account = { status: "banned", by: null, at: new Date(), reason: publisher.account?.reason || null };
+  }
+  return await publisher.save();
+};

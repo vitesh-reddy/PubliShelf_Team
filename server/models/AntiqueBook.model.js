@@ -32,8 +32,24 @@ const antiqueBookSchema = new mongoose.Schema({
     ref: "Publisher",
     required: true,
   },
-  publishedAt: { type: Date, default: Date.now }, 
-});
+  publishedAt: { type: Date, default: Date.now },
+
+  // Verification / moderation state
+  status: {
+    type: String,
+    enum: ["pending", "approved", "rejected"],
+    default: "approved", // legacy items treated as approved
+    index: true,
+  },
+  rejectionReason: { type: String, default: null },
+  reviewedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Manager",
+    default: null,
+  },
+}, { timestamps: true });
+
+// With enum-only status, no boolean sync hook is needed
 
 const AntiqueBook = mongoose.model("AntiqueBook", antiqueBookSchema);
 export default AntiqueBook;

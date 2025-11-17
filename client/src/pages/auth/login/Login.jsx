@@ -7,6 +7,15 @@ import { setUser } from '../../../store/slices/userSlice';
 import { setCart } from '../../../store/slices/cartSlice';
 import { setWishlist } from '../../../store/slices/wishlistSlice';
 import { useNavigate } from "react-router-dom";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+} from "../../../components/ui/AlertDialog";
 
 const Login = () => {
   const dispatch = useDispatch();
@@ -17,6 +26,7 @@ const Login = () => {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
+  const [alertDialog, setAlertDialog] = useState({ open: false, title: "", message: "", type: "" });
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -53,7 +63,45 @@ const Login = () => {
         
         navigate(`/${userData.role}/dashboard`);
       } else {
-        setError(response.message || "Unexpected error occurred. Please try again.");
+        // Check if this is a verification/status issue or user not found
+        const message = response.message || "Unexpected error occurred. Please try again.";
+        const details = response.data; // Contains reason, actionBy, actionDate if applicable
+        
+        if (message.includes("pending verification") || message.includes("under review") || 
+            message.includes("rejected") || message.includes("banned")) {
+          // Show dialog for account status issues
+          let title = "Account Status";
+          let type = "warning";
+          let fullMessage = message;
+          
+          if (message.includes("banned")) {
+            title = "Account Banned";
+            type = "error";
+            if (details) {
+              fullMessage = `Your account has been banned.\n\nReason: ${details.reason}\nAction by: ${details.actionBy}`;
+              if (details.actionDate) {
+                fullMessage += `\nDate: ${new Date(details.actionDate).toLocaleString()}`;
+              }
+            }
+          } else if (message.includes("rejected")) {
+            title = "Account Rejected";
+            type = "error";
+            if (details) {
+              fullMessage = `Your account verification was rejected.\n\nReason: ${details.reason}\nRejected by: ${details.actionBy}`;
+              if (details.actionDate) {
+                fullMessage += `\nDate: ${new Date(details.actionDate).toLocaleString()}`;
+              }
+            }
+          } else if (message.includes("pending") || message.includes("under review")) {
+            title = "Verification Pending";
+            type = "info";
+          }
+          
+          setAlertDialog({ open: true, title, message: fullMessage, type });
+        } else {
+          // Regular error (user not found, invalid password, etc.)
+          setError(message);
+        }
       }
     } catch (err) {
       console.error("Error during login:", err);
@@ -247,9 +295,54 @@ const Login = () => {
                   </div>
                 </div>
               </a>
+              <a
+                href="/manager/signup"
+                className="block w-full border border-gray-200 p-4 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-all duration-300"
+              >
+                <div className="flex items-center">
+                  <i className="fas fa-user-shield text-2xl text-purple-600 mr-4"></i>
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900">Manager</h4>
+                    <p className="text-sm text-gray-600">Manage platform operations</p>
+                  </div>
+                </div>
+              </a>
             </div>
           </div>
         </div>
+
+        {/* Account Status Alert Dialog */}
+        <AlertDialog open={alertDialog.open} onOpenChange={(open) => setAlertDialog({ ...alertDialog, open })}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                {alertDialog.type === "error" && <i className="fas fa-exclamation-circle text-red-600"></i>}
+                {alertDialog.type === "warning" && <i className="fas fa-exclamation-triangle text-yellow-600"></i>}
+                {alertDialog.type === "info" && <i className="fas fa-info-circle text-blue-600"></i>}
+                {alertDialog.title}
+              </AlertDialogTitle>
+            </AlertDialogHeader>
+            <AlertDialogDescription className="text-gray-700 whitespace-pre-line">
+              {alertDialog.message}
+            </AlertDialogDescription>
+            {alertDialog.type === "error" && (
+              <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <p className="text-sm text-gray-600">
+                  <i className="fas fa-question-circle mr-2"></i>
+                  Need help? Contact support at{" "}
+                  <a href="mailto:support@publishelf.com" className="text-purple-600 hover:underline">
+                    support@publishelf.com
+                  </a>
+                </p>
+              </div>
+            )}
+            <AlertDialogFooter>
+              <AlertDialogAction onClick={() => setAlertDialog({ open: false, title: "", message: "", type: "" })}>
+                Understood
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );

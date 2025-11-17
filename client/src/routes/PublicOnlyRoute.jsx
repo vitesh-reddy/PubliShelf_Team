@@ -15,8 +15,8 @@ const PublicOnlyRoute = () => {
       try {
         const response = await getCurrentUser();
         
-        if (response.success && response.data.user) {
-          dispatch(setAuth({ role: response.data.user.role }));
+        if (response && response.success && response.data && response.data.user) {
+          dispatch(setAuth({ isAuthenticated: true, role: response.data.user.role }));
         } else {
           dispatch(clearAuth());
         }
@@ -52,6 +52,10 @@ const PublicOnlyRoute = () => {
       return <Navigate to="/buyer/dashboard" replace />;
     } else if (role === 'publisher') {
       return <Navigate to="/publisher/dashboard" replace />;
+    } else if (role === 'manager') {
+      return <Navigate to="/manager/dashboard" replace />;
+    } else if (role === 'admin') {
+      return <Navigate to="/admin/dashboard" replace />;
     } else {
       return <Navigate to="/" replace />;
     }
