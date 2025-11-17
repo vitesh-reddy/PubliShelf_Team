@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useSearchParams } from 'react-router-dom';
 import AdminNavbar from '../components/AdminNavbar';
+import { toast } from 'sonner';
 import {
   getAllAdmins,
   createAdmin,
@@ -64,22 +65,22 @@ const Settings = () => {
 
   const handleChangeKey = async () => {
     if (!currentKey || !newKey) {
-      alert('Please fill in all fields');
+      toast.error('Please fill in all fields');
       return;
     }
     if (newKey.length < 6) {
-      alert('New key must be at least 6 characters');
+      toast.error('New key must be at least 6 characters');
       return;
     }
     try {
       setActionLoading(true);
       await updateAdminKey(currentKey, newKey);
-      alert('Admin key updated successfully! Please login again with your new key.');
+      toast.success('Admin key updated successfully! Please login again with your new key.');
       setShowChangeKeyDialog(false);
       setCurrentKey('');
       setNewKey('');
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to update admin key');
+      toast.error(err.response?.data?.message || 'Failed to update admin key');
     } finally {
       setActionLoading(false);
     }
@@ -87,11 +88,11 @@ const Settings = () => {
 
   const handleCreateAdmin = async () => {
     if (!newAdminData.name || !newAdminData.email || !newAdminData.adminKey) {
-      alert('Please fill in all fields');
+      toast.error('Please fill in all fields');
       return;
     }
     if (newAdminData.adminKey.length < 6) {
-      alert('Admin key must be at least 6 characters');
+      toast.error('Admin key must be at least 6 characters');
       return;
     }
     try {
@@ -100,9 +101,9 @@ const Settings = () => {
       await fetchAdmins();
       setShowCreateAdminDialog(false);
       setNewAdminData({ name: '', email: '', adminKey: '' });
-      alert('Admin created successfully!');
+      toast.success('Admin created successfully!');
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to create admin');
+      toast.error(err.response?.data?.message || 'Failed to create admin');
     } finally {
       setActionLoading(false);
     }
@@ -115,9 +116,9 @@ const Settings = () => {
       await fetchAdmins();
       setShowDeleteDialog(false);
       setSelectedAdmin(null);
-      alert('Admin deleted successfully!');
+      toast.success('Admin deleted successfully!');
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to delete admin');
+      toast.error(err.response?.data?.message || 'Failed to delete admin');
     } finally {
       setActionLoading(false);
     }
@@ -125,26 +126,26 @@ const Settings = () => {
 
   const handleChangeAdminKey = async () => {
     if (!newAdminKeyInput.trim()) {
-      alert('Please enter a new admin key');
+      toast.error('Please enter a new admin key');
       return;
     }
     if (newAdminKeyInput.length < 6) {
-      alert('Admin key must be at least 6 characters');
+      toast.error('Admin key must be at least 6 characters');
       return;
     }
     try {
       setActionLoading(true);
       await changeAdminKey(selectedAdmin._id, newAdminKeyInput);
-      alert(`Admin key changed successfully for ${selectedAdmin.name}!`);
+      toast.success(`Admin key changed successfully for ${selectedAdmin.name}!`);
       setShowChangeAdminKeyDialog(false);
       setSelectedAdmin(null);
       setNewAdminKeyInput('');
       fetchAdmins(); // Refresh the list
     } catch (err) {
       if (err.response?.status === 409) {
-        alert('This admin key is already in use by another admin. Please choose a different key.');
+        toast.error('This admin key is already in use by another admin. Please choose a different key.');
       } else {
-        alert(err.response?.data?.message || 'Failed to change admin key');
+        toast.error(err.response?.data?.message || 'Failed to change admin key');
       }
     } finally {
       setActionLoading(false);

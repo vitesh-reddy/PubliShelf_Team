@@ -7,6 +7,7 @@ import {
   banManager, 
   reinstateManager 
 } from '../../../services/admin.services';
+import { toast } from 'sonner';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -56,8 +57,9 @@ const ManagerOverview = () => {
       await approveManager(id);
       await fetchManager();
       setShowApproveDialog(false);
+      toast.success('Manager approved successfully');
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to approve manager');
+      toast.error(err.response?.data?.message || 'Failed to approve manager');
     } finally {
       setActionLoading(false);
     }
@@ -65,7 +67,7 @@ const ManagerOverview = () => {
 
   const handleReject = async () => {
     if (!reason.trim()) {
-      alert('Please provide a reason for rejection');
+      toast.error('Please provide a reason for rejection');
       return;
     }
     try {
@@ -74,8 +76,9 @@ const ManagerOverview = () => {
       await fetchManager();
       setShowRejectDialog(false);
       setReason('');
+      toast.success('Manager rejected');
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to reject manager');
+      toast.error(err.response?.data?.message || 'Failed to reject manager');
     } finally {
       setActionLoading(false);
     }
@@ -83,7 +86,7 @@ const ManagerOverview = () => {
 
   const handleBan = async () => {
     if (!reason.trim()) {
-      alert('Please provide a reason for banning');
+      toast.error('Please provide a reason for banning');
       return;
     }
     try {
@@ -92,8 +95,9 @@ const ManagerOverview = () => {
       await fetchManager();
       setShowBanDialog(false);
       setReason('');
+      toast.success('Manager banned successfully');
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to ban manager');
+      toast.error(err.response?.data?.message || 'Failed to ban manager');
     } finally {
       setActionLoading(false);
     }
@@ -105,8 +109,9 @@ const ManagerOverview = () => {
       await reinstateManager(id);
       await fetchManager();
       setShowReinstateDialog(false);
+      toast.success('Manager reinstated successfully');
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to reinstate manager');
+      toast.error(err.response?.data?.message || 'Failed to reinstate manager');
     } finally {
       setActionLoading(false);
     }

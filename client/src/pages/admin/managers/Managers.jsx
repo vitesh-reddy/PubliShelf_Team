@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAllManagers, banManager, reinstateManager } from '../../../services/admin.services';
+import { toast } from 'sonner';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -83,8 +84,9 @@ const Managers = ({ type = 'pending' }) => {
       setShowBanDialog(false);
       setBanReason('');
       setSelectedManager(null);
+      toast.success('Manager banned successfully');
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to ban manager');
+      toast.error(err.response?.data?.message || 'Failed to ban manager');
     } finally {
       setActionLoading(false);
     }
@@ -98,8 +100,9 @@ const Managers = ({ type = 'pending' }) => {
       await fetchManagers();
       setShowReinstateDialog(false);
       setSelectedManager(null);
+      toast.success('Manager reinstated successfully');
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to reinstate manager');
+      toast.error(err.response?.data?.message || 'Failed to reinstate manager');
     } finally {
       setActionLoading(false);
     }
