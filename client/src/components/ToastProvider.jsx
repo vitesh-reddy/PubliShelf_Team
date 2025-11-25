@@ -7,6 +7,7 @@ export default () => {
       position="top-center"
       closeButton
       toastOptions={{
+        duration: 3000,
         style: {
           width: "clamp(300px, max-content, 400px)",
           maxWidth: "90vw",
@@ -14,7 +15,7 @@ export default () => {
           borderRadius: "14px",
           background: "rgba(255,255,255,0)",
           color: "#111",
-          fontSize: "18px",
+          fontSize: "17px",
           boxShadow: "0 8px 25px rgba(0,0,0,0.25)",
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
