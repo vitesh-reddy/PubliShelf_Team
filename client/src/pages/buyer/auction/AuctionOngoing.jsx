@@ -100,6 +100,8 @@ const AuctionOngoing = () => {
   const [lastBidTime, setLastBidTime] = useState(null);
   const [fullDataLoaded, setFullDataLoaded] = useState(false);
   const [isBidding, setIsBidding] = useState(false);
+  const [visibleBidsCount, setVisibleBidsCount] = useState(5);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   
   const lastBidTimeRef = useRef(null);
 
@@ -323,6 +325,14 @@ const AuctionOngoing = () => {
     }
   };
 
+  const handleLoadMore = async () => {
+    setIsLoadingMore(true);
+    // Mock delay for realistic feel
+    await new Promise(resolve => setTimeout(resolve, 500));
+    setVisibleBidsCount(prev => prev + 5);
+    setIsLoadingMore(false);
+  };
+
   if (loading && !book) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   if (error) return <div className="min-h-screen flex items-center justify-center text-red-500">{error}</div>;
   if (!book) return <div className="min-h-screen flex items-center justify-center">Auction not found</div>;
@@ -536,7 +546,7 @@ const AuctionOngoing = () => {
                     </div>
                   </div>
                   <div id="bidding-history" className="space-y-3">
-                    {sortedBids.map((bid, index) => {
+                    {sortedBids.slice(0, visibleBidsCount).map((bid, index) => {
                       const bidder = bid.bidder || {};
                       const bidderName = bidder.firstname && bidder.lastname
                         ? `${bidder.firstname} ${bidder.lastname}`
@@ -608,10 +618,24 @@ const AuctionOngoing = () => {
                       );
                     })}
                   </div>
-                  {sortedBids.length > 10 && (
+                  {sortedBids.length > visibleBidsCount && (
                     <div className="flex justify-center mt-4">
-                      <button className="text-sm text-purple-600 hover:text-purple-800 font-medium">
-                        Load more bids
+                      <button 
+                        onClick={handleLoadMore}
+                        disabled={isLoadingMore}
+                        className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors text-sm font-medium flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isLoadingMore ? (
+                          <>
+                            <i className="fas fa-spinner fa-spin text-xs"></i>
+                            <span>Loading...</span>
+                          </>
+                        ) : (
+                          <>
+                            <i className="fas fa-chevron-down text-xs"></i>
+                            <span>Load More</span>
+                          </>
+                        )}
                       </button>
                     </div>
                   )}
