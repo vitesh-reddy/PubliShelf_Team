@@ -26,6 +26,9 @@ const antiqueBookSchema = new mongoose.Schema({
   auctionStart: { type: Date, required: true },
   auctionEnd: { type: Date, required: true },
   image: { type: String },
+  // New: support multiple authentication documents
+  authenticationImages: [{ type: String }],
+  // Legacy single field kept for backward compatibility (may be null on new records)
   authenticationImage: { type: String },
   publisher: {
     type: mongoose.Schema.Types.ObjectId,

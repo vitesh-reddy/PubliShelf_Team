@@ -755,10 +755,16 @@ export const deleteBuyerAddress = async (req, res) => {
     const { id } = req.params;
     const buyer = await Buyer.findById(req.user.id);
     if (!buyer) return res.status(404).json({ success: false, message: "Buyer not found" });
-    buyer.addresses.id(id)?.remove();
+    const beforeCount = buyer.addresses.length;
+    // Use filter instead of deprecated subdocument .remove() for Mongoose 7/8 compatibility
+    buyer.addresses = buyer.addresses.filter((addr) => addr._id.toString() !== id.toString());
+    if (buyer.addresses.length === beforeCount) {
+      return res.status(404).json({ success: false, message: "Address not found" });
+    }
     await buyer.save();
-    res.status(200).json({ success: true });
+    res.status(200).json({ success: true, message: "Address deleted" });
   } catch (error) {
+    console.error("Error deleting address:", error);
     res.status(500).json({ success: false, message: "Error deleting address" });
   }
 };
