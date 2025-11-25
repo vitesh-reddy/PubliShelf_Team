@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { getAuctionOngoing, placeBidApi } from "../../../services/antiqueBook.services.js";
+import { getAuctionOngoing, getAuctionPollData, placeBidApi } from "../../../services/antiqueBook.services.js";
 import { useUser } from '../../../store/hooks';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -85,9 +85,7 @@ const CountdownProgress = ({ auctionStart, auctionEnd, isActive }) => {
 
 const AuctionOngoing = () => {
   const { id } = useParams();
-  const navigate = useNavigate();
   const user = useUser();
-  const buyerName = user.firstname ? `${user.firstname} ${user.lastname || ''}`.trim() : "Buyer";
   
   const [book, setBook] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -97,32 +95,40 @@ const AuctionOngoing = () => {
   const [modalBidAmount, setModalBidAmount] = useState(0);
   const [formError, setFormError] = useState("");
   const [nextSyncIn, setNextSyncIn] = useState(0);
-  const [currentPollInterval, setCurrentPollInterval] = useState(50);
+  const [currentPollInterval, setCurrentPollInterval] = useState(30);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [lastBidTime, setLastBidTime] = useState(null);
+  const [fullDataLoaded, setFullDataLoaded] = useState(false);
+  const [isBidding, setIsBidding] = useState(false);
+  
+  const lastBidTimeRef = useRef(null);
 
   // Calculate dynamic polling interval based on time remaining
   const getPollingInterval = (auctionEnd) => {
+    // return 5000; // this will be used during presentation, please don't remove this
     const now = new Date();
     const end = new Date(auctionEnd);
     const timeLeftMs = end - now;
     const timeLeftMin = timeLeftMs / (1000 * 60);
+
     
-    if (timeLeftMin <= 0) return null; // Auction ended, stop polling
-    if (timeLeftMin > 30) return 60000;      // 60 seconds
-    if (timeLeftMin > 10) return 15000;      // 15 seconds
-    if (timeLeftMin > 1) return 1000;        // 1 second
-    return 500;                               // 0.5 seconds (< 1 min)
+    if (timeLeftMin <= 0) return null;
+    if (timeLeftMin > 30) return 30000;
+    if (timeLeftMin > 10) return 10000;
+    if (timeLeftMin > 1) return 1000;
+    return 500;
   };
 
   // Dynamic polling with interval adjustment
   useEffect(() => {
-    fetchAuction(true);
+    // Initial load - fetch full auction data
+    fetchFullAuction();
 
     let pollIntervalId;
     let reevaluateIntervalId;
 
     const startPolling = () => {
-      if (!book?.auctionEnd) return;
+      if (!book?.auctionEnd || isBidding) return; // Pause polling during bid
       
       const pollInterval = getPollingInterval(book.auctionEnd);
       if (!pollInterval) {
@@ -131,9 +137,11 @@ const AuctionOngoing = () => {
         return;
       }
       
-      // Set up polling
+      // Set up polling for incremental updates
       pollIntervalId = setInterval(() => {
-        fetchAuction(false);
+        if (!isBidding) { // Double-check before each poll
+          fetchIncrementalUpdate();
+        }
       }, pollInterval);
       
       // Store current interval in seconds for display
@@ -141,7 +149,7 @@ const AuctionOngoing = () => {
       setNextSyncIn(pollInterval / 1000);
     };
 
-    if (book) {
+    if (fullDataLoaded) {
       startPolling();
       
       // Re-evaluate polling interval every 60 seconds
@@ -155,7 +163,7 @@ const AuctionOngoing = () => {
       clearInterval(pollIntervalId);
       clearInterval(reevaluateIntervalId);
     };
-  }, [id, book?.auctionEnd]);
+  }, [id, book?.auctionEnd, fullDataLoaded, isBidding]);
 
   // Countdown for next sync
   useEffect(() => {
@@ -172,44 +180,109 @@ const AuctionOngoing = () => {
   }, [currentPollInterval]);
 
 
-  const fetchAuction = async (showLoader = false) => {
+  // Full data fetch (initial load only)
+  const fetchFullAuction = async () => {
     try {
-      if (showLoader) setLoading(true);
+      setLoading(true);
       const response = await getAuctionOngoing(id);
       if (response.success) {
         setBook(response.data.book);
-        // Reset sync countdown when data is fetched
-        if (!showLoader && currentPollInterval > 0) {
-          setNextSyncIn(currentPollInterval);
+        // Track latest bid time for incremental polling
+        const bids = response.data.book.biddingHistory || [];
+        if (bids.length > 0) {
+          const latest = bids.reduce((max, bid) => 
+            new Date(bid.bidTime) > new Date(max.bidTime) ? bid : max
+          );
+          lastBidTimeRef.current = latest.bidTime;
+          setLastBidTime(latest.bidTime);
         }
+        setFullDataLoaded(true);
       } else {
         setError(response.message);
       }
     } catch (err) {
       setError("Failed to fetch auction");
     } finally {
-      if (showLoader) setLoading(false);
+      setLoading(false);
     }
   };
 
-  const handleManualSync = async () => {
-    setIsSyncing(true);
+  // Unified sync function for both auto and manual sync
+  const syncAuctionData = async (isManual = false) => {
+    // Prevent sync during bid placement
+    if (isBidding) return;
+    
+    // Set loading state for manual sync
+    if (isManual) setIsSyncing(true);
+    
     try {
-      const response = await getAuctionOngoing(id);
+      const currentLastBidTime = lastBidTimeRef.current || lastBidTime;
+      const response = await getAuctionPollData(id, currentLastBidTime);
+      
       if (response.success) {
-        setBook(response.data.book);
-        setNextSyncIn(currentPollInterval);
-        toast.success('Auction Data Synced..!');
+        const pollData = response.data;
+        
+        // Update book state and lastBidTime
+        if (pollData.hasNewBids && pollData.newBids.length > 0) {
+          // Find the latest bid time from new bids FIRST
+          const latestBid = pollData.newBids.reduce((max, bid) => 
+            new Date(bid.bidTime) > new Date(max.bidTime) ? bid : max
+          );
+          
+          // Update state
+          setBook(prev => ({
+            ...prev,
+            currentPrice: pollData.currentPrice,
+            biddingHistory: [...pollData.newBids, ...(prev.biddingHistory || [])]
+          }));
+          
+          // Update lastBidTime immediately in both state and ref
+          lastBidTimeRef.current = latestBid.bidTime;
+          setLastBidTime(latestBid.bidTime);
+        } else {
+          // No new bids, just update current price
+          setBook(prev => ({
+            ...prev,
+            currentPrice: pollData.currentPrice
+          }));
+        }
+        
+        // Recalculate interval based on current time left
+        if (book?.auctionEnd) {
+          const newInterval = getPollingInterval(book.auctionEnd);
+          if (newInterval) {
+            const intervalInSeconds = newInterval / 1000;
+            setCurrentPollInterval(intervalInSeconds);
+            setNextSyncIn(intervalInSeconds);
+          }
+        }
+        
+        // Show success toast only for manual sync
+        if (isManual) {
+          toast.success('Auction Data Synced..!');
+        }
       } else {
-        toast.error(response.message || 'Failed to sync auction data');
+        // Show error toast only for manual sync
+        if (isManual) {
+          toast.error(response.message || 'Failed to sync auction data');
+        }
       }
     } catch (err) {
-      toast.error('Failed to sync auction data');
+      if (isManual) {
+        toast.error('Failed to sync auction data');
+      } else {
+        console.error("Poll update failed:", err);
+      }
     } finally {
-      setIsSyncing(false);
+      if (isManual) setIsSyncing(false);
     }
   };
 
+  // Auto sync (called by interval)
+  const fetchIncrementalUpdate = () => syncAuctionData(false);
+
+  // Manual sync (called by button click)
+  const handleManualSync = () => syncAuctionData(true);
 
   const handlePlaceBid = () => {
     const current = book.currentPrice || book.basePrice;
@@ -227,23 +300,30 @@ const AuctionOngoing = () => {
   };
 
   const confirmBid = async () => {
+    setIsBidding(true); // Block all operations
     try {
       const response = await placeBidApi({ auctionId: id, bidAmount: modalBidAmount });
       if (response.success) {
         toast.success("Bid placed successfully!");
-        fetchAuction();
+        
+        // Close modal and reset form
         setShowBidModal(false);
         setBidAmount("");
+        
+        // Fetch fresh data from server (server is source of truth)
+        await fetchIncrementalUpdate();
       } else {
         toast.error(response.message || "Failed to place bid");
       }
     } catch (err) {
       toast.error("Error placing bid");
-      console.log(err.message)
+      console.log(err.message);
+    } finally {
+      setIsBidding(false); // Resume all operations
     }
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (loading && !book) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   if (error) return <div className="min-h-screen flex items-center justify-center text-red-500">{error}</div>;
   if (!book) return <div className="min-h-screen flex items-center justify-center">Auction not found</div>;
 
@@ -352,16 +432,20 @@ const AuctionOngoing = () => {
                 {isActive && currentPollInterval > 0 && (
                   <div className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-3 border border-gray-200">
                     <div className="flex items-center space-x-2">
-                      <i className={`fas fa-sync-alt text-purple-600 ${isSyncing ? 'animate-spin' : ''}`}></i>
+                      <i className={`fas fa-sync-alt text-purple-600 ${isSyncing || isBidding ? 'animate-spin' : ''}`}></i>
                       <span className="text-[15px] text-gray-600">
-                        Next sync in: <span className="font-semibold text-purple-700">{Math.ceil(nextSyncIn)}s</span>
+                        {isBidding ? (
+                          <span className="font-semibold text-orange-600">Placing bid...</span>
+                        ) : (
+                          <>Next sync in: <span className="font-semibold text-purple-700">{Math.ceil(nextSyncIn)}s</span></>
+                        )}
                       </span>
                     </div>
                     <button
                       onClick={handleManualSync}
-                      disabled={isSyncing}
+                      disabled={isSyncing || isBidding}
                       className={`bg-purple-600 text-white px-4 py-2 rounded-md text-[15px] hover:bg-purple-700 transition-colors flex items-center space-x-1 ${
-                        isSyncing ? 'opacity-50 cursor-not-allowed' : ''
+                        (isSyncing || isBidding) ? 'opacity-50 cursor-not-allowed' : ''
                       }`}
                     >
                       <i className={`fas fa-sync text-xs ${isSyncing ? 'animate-spin' : ''}`}></i>
@@ -398,7 +482,7 @@ const AuctionOngoing = () => {
                       min={(book.currentPrice || book.basePrice) + 100}
                       placeholder={`Enter bid (min ₹${(book.currentPrice || book.basePrice) + 100})`}
                       className="w-full px-3 py-3 mt-1 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-600 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      disabled={!isActive}
+                      disabled={!isActive || isBidding}
                     />
                     <span
                       className="absolute right-2 top-9 text-gray-400 cursor-pointer"
@@ -410,13 +494,13 @@ const AuctionOngoing = () => {
                   <button
                     id="enter-bid"
                     onClick={handlePlaceBid}
-                    disabled={!isActive}
+                    disabled={!isActive || isBidding}
                     className={`w-full bg-purple-600 text-white px-4 h-[45px] rounded-lg ${
-                      isActive ? "hover:bg-purple-700" : "bg-gray-400 cursor-not-allowed"
+                      (isActive && !isBidding) ? "hover:bg-purple-700" : "bg-gray-400 cursor-not-allowed"
                     } transition-colors flex items-center justify-center space-x-2 text-sm mb-3`}
                   >
                     <i className="fas fa-gavel"></i>
-                    <span>{isActive ? "Place Bid" : "Auction Ended"}</span>
+                    <span>{!isActive ? "Auction Ended" : (isBidding ? "Processing..." : "Place Bid")}</span>
                   </button>
                   {formError && (
                     <p id="error-message" className="absolute -bottom-3 left-0 text-red-600 text-xs">
@@ -570,16 +654,23 @@ const AuctionOngoing = () => {
                   <button
                     id="modal-cancel"
                     onClick={() => setShowBidModal(false)}
-                    className="px-3 py-1.5 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-100 text-sm"
+                    disabled={isBidding}
+                    className={`px-3 py-1.5 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-100 text-sm ${
+                      isBidding ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
                   >
                     Cancel
                   </button>
                   <button
                     id="modal-confirm"
                     onClick={confirmBid}
-                    className="px-3 py-1.5 bg-purple-600 text-white rounded-md hover:bg-purple-700 text-sm"
+                    disabled={isBidding}
+                    className={`px-3 py-1.5 bg-purple-600 text-white rounded-md hover:bg-purple-700 text-sm flex items-center space-x-1 ${
+                      isBidding ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
                   >
-                    Confirm
+                    {isBidding && <i className="fas fa-spinner fa-spin text-xs"></i>}
+                    <span>{isBidding ? 'Placing Bid...' : 'Confirm'}</span>
                   </button>
                 </div>
               </div>

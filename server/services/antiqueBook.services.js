@@ -109,3 +109,58 @@ export const getAuctionItemById = async (bookId) => {
   }
   return book;
 };
+
+export const getAuctionPollingData = async (bookId, lastBidTime) => {
+  // Step 1: Quick validation - auction exists and is approved
+  const book = await AntiqueBook.findById(bookId)
+    .select('status currentPrice')
+    .lean();
+  
+  if (!book) {
+    throw new Error("Auction not found");
+  }
+  if (book.status !== 'approved') {
+    throw new Error("Auction not available");
+  }
+  
+  // Step 2: Fetch ONLY new bids since lastBidTime
+  let newBids = [];
+  
+  if (lastBidTime) {
+    // Query for bids after lastBidTime
+    const bookWithBids = await AntiqueBook.findOne({
+      _id: bookId,
+      'biddingHistory.bidTime': { $gt: new Date(lastBidTime) }
+    })
+    .select('biddingHistory')
+    .populate('biddingHistory.bidder', 'firstname lastname email')
+    .lean();
+    
+    if (bookWithBids && bookWithBids.biddingHistory) {
+      // Filter to only get bids after lastBidTime
+      newBids = bookWithBids.biddingHistory.filter(
+        bid => new Date(bid.bidTime) > new Date(lastBidTime)
+      );
+    }
+  } else {
+    // First poll without timestamp - return last 5 bids
+    const bookWithBids = await AntiqueBook.findById(bookId)
+      .select('biddingHistory')
+      .populate('biddingHistory.bidder', 'firstname lastname email')
+      .lean();
+    
+    if (bookWithBids && bookWithBids.biddingHistory) {
+      newBids = bookWithBids.biddingHistory
+        .sort((a, b) => new Date(b.bidTime) - new Date(a.bidTime))
+        .slice(0, 5);
+    }
+  }
+  
+  // Step 3: Return ONLY what changes during auction
+  return {
+    currentPrice: book.currentPrice,    // Only field that changes
+    newBids: newBids,                   // Only new bids
+    hasNewBids: newBids.length > 0,     // Convenience flag
+    timestamp: new Date()               // Server time for debugging
+  };
+};

@@ -18,6 +18,7 @@ import {
   getBuyerAuctionPage,
   getAuctionItemDetail,
   getAuctionOngoing,
+  getAuctionPollData,
   placeBid,
   getBuyerProfile,
   updateBuyerProfile,
@@ -46,6 +47,7 @@ router.post("/checkout/place-order", protect, placeOrderController);
 router.get("/auction-page", protect, getBuyerAuctionPage);
 router.get("/auction-item-detail/:id", protect, getAuctionItemDetail);
 router.get("/auction-ongoing/:id", protect, getAuctionOngoing);
+router.get("/auction-poll/:id", protect, getAuctionPollData);
 router.post("/auctions/:id/bid", protect, placeBid);
 router.get("/profile", protect, getBuyerProfile);
 router.put("/profile", protect, updateBuyerProfile);
