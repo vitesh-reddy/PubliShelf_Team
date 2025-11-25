@@ -402,18 +402,20 @@ export const sellAntique = async (req, res) => {
       authenticationImage: authenticationImageUrl,
       publisher: req.user.id,
       publishedAt: new Date(),
+      // Moderation flags: send for verification
+      status: 'pending',
     });
 
     res.status(201).json({
       success: true,
-      message: "Antique book listed for auction successfully",
+      message: "Antique book submitted for verification",
       data: { antiqueBook: newAntiqueBook }
     });
   } catch (error) {
     console.error("Error listing antique book:", error);
     res.status(500).json({
       success: false,
-      message: "An error occurred while listing the antique book",
+      message: "An error occurred while submitting the antique book for verification",
       data: null
     });
   }

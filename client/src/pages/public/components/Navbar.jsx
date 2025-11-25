@@ -2,7 +2,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../../store/hooks";
 
 const Navbar = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, role } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();  
   return (
@@ -50,7 +50,19 @@ const Navbar = () => {
         </div>
         <div className="flex items-center space-x-4">
           <button
-            onClick={() => navigate("/auth/login")}
+            onClick={() => {
+              if (!isAuthenticated) {
+                navigate("/auth/login");
+              } else if (role === 'buyer') {
+                navigate("/buyer/dashboard");
+              } else if (role === 'publisher') {
+                navigate("/publisher/dashboard");
+              } else if (role === 'manager') {
+                navigate("/manager/dashboard");
+              } else {
+                navigate("/");
+              }
+            }}
             className="bg-gradient-to-r hover:bg-gradient-to-l from-purple-600 to-indigo-600 text-white px-4 py-2 rounded-lg hover:-translate-y-[2px] transition-all duration-300"
           >
             {isAuthenticated ? "Dashboard" : "Join Now"}

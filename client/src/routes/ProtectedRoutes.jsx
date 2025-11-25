@@ -1,4 +1,4 @@
-import { Route } from 'react-router-dom';
+import { Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
 
 import Dashboard from '../pages/buyer/dashboard/Dashboard';
@@ -20,6 +20,21 @@ import EditBookPage from '../pages/publisher/edit-book/EditBookPage';
 import PublisherViewBook from '../pages/publisher/view-book/ViewBook';
 import PublisherDashboard from '../pages/publisher/dashboard/Dashboard';
 import PublisherDashboard_Old from '../pages/publisher/dashboard old/Dashboard_Old';
+
+import ManagerDashboard from '../pages/manager/dashboard/Dashboard';
+import AuctionsLayout from '../pages/manager/auctions/AuctionsLayout';
+import ManagerAuctions from '../pages/manager/auctions/Auctions';
+import AuctionOverview from '../pages/manager/auctions/AuctionOverview';
+import ManagerAuctionsOverview from '../pages/manager/auctions/Overview';
+import PublishersLayout from '../pages/manager/publishers/PublishersLayout';
+import Publishers from '../pages/manager/publishers/Publishers';
+import PublisherOverview from '../pages/manager/publishers/PublisherOverview';
+
+import AdminDashboard from '../pages/admin/dashboard/Dashboard';
+import ManagersLayout from '../pages/admin/managers/ManagersLayout';
+import Managers from '../pages/admin/managers/Managers';
+import ManagerOverview from '../pages/admin/managers/ManagerOverview';
+import Settings from '../pages/admin/settings/Settings';
 
 const ProtectedRoutes = () => (
   <>
@@ -47,6 +62,39 @@ const ProtectedRoutes = () => (
       <Route path="/publisher/sell-antique" element={<SellAntique />} />
       <Route path="/publisher/edit-book/:id" element={<EditBookPage />} />
       <Route path="/publisher/view-book/:id" element={<PublisherViewBook />} />
+    </Route>
+
+    {/* Manager Routes */}
+    <Route element={<ProtectedRoute allowedRoles={['manager']} />}>
+      <Route path="/manager/dashboard" element={<ManagerDashboard />} />
+      <Route path="/manager/auctions" element={<AuctionsLayout />}>
+        <Route index element={<Navigate to="/manager/auctions/pending" replace />} />
+        <Route path="overview" element={<ManagerAuctionsOverview />} />
+        <Route path="pending" element={<ManagerAuctions type="pending" />} />
+        <Route path="approved" element={<ManagerAuctions type="approved" />} />
+        <Route path="rejected" element={<ManagerAuctions type="rejected" />} />
+      </Route>
+      <Route path="/manager/auctions/:id/overview" element={<AuctionOverview />} />
+      <Route path="/manager/publishers" element={<PublishersLayout />}>
+        <Route index element={<Navigate to="/manager/publishers/pending" replace />} />
+        <Route path="pending" element={<Publishers type="pending" />} />
+        <Route path="active" element={<Publishers type="active" />} />
+        <Route path="banned" element={<Publishers type="banned" />} />
+      </Route>
+      <Route path="/manager/publishers/:id/overview" element={<PublisherOverview />} />
+    </Route>
+
+    {/* Admin Routes */}
+    <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+      <Route path="/admin/dashboard" element={<AdminDashboard />} />
+      <Route path="/admin/managers" element={<ManagersLayout />}>
+        <Route index element={<Navigate to="/admin/managers/pending" replace />} />
+        <Route path="pending" element={<Managers type="pending" />} />
+        <Route path="active" element={<Managers type="active" />} />
+        <Route path="banned" element={<Managers type="banned" />} />
+      </Route>
+      <Route path="/admin/managers/:id" element={<ManagerOverview />} />
+      <Route path="/admin/settings" element={<Settings />} />
     </Route>
   </>
 );

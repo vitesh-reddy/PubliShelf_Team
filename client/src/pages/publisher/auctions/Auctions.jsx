@@ -3,11 +3,22 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { getDashboard } from "../../../services/publisher.services";
 import PublisherNavbar from "../components/PublisherNavbar";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogCancel,
+} from "../../../components/ui/AlertDialog";
 
 const Auctions = () => {
   const [user, setUser] = useState({ firstname: "", lastname: "" });
   const [auctions, setAuctions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('approved');
+  const [rejectionDialog, setRejectionDialog] = useState({ open: false, reason: '' });
 
   useEffect(() => {
     loadAuctions();
@@ -48,6 +59,14 @@ const Auctions = () => {
     });
   };
 
+  const filteredAuctions = auctions.filter(a => (a.status || 'approved') === activeTab);
+
+  const counts = auctions.reduce((acc, a) => {
+    const status = a.status || 'approved';
+    acc[status] = (acc[status] || 0) + 1;
+    return acc;
+  }, { approved: 0, pending: 0, rejected: 0 });
+
   if (loading) {
     return (
       <div className="bg-gray-50 min-h-screen">
@@ -72,21 +91,45 @@ const Auctions = () => {
           <div className="flex items-center justify-between mb-8">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Antique Book Auctions</h1>
-              <p className="text-gray-600 mt-1">{auctions.length} auctions listed</p>
+              <p className="text-gray-600 mt-1">{auctions.length} total submissions</p>
             </div>
             <Link
               to="/publisher/sell-antique"
               className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg transition-colors flex items-center gap-2"
             >
-              <i className="fas fa-gavel"></i>
-              Start New Auction
+              <i className="fas fa-plus"></i>
+               Create New Auction
             </Link>
           </div>
 
+          {/* Tabs */}
+          <div className="mb-6 border-b border-gray-200 bg-white rounded-t-xl px-6">
+            <div className="flex space-x-8 overflow-x-auto">
+              {[
+                { key: 'approved', label: `Approved (${counts.approved})`, icon: 'fa-check' },
+                { key: 'pending', label: `Pending (${counts.pending})`, icon: 'fa-clock' },
+                { key: 'rejected', label: `Rejected (${counts.rejected})`, icon: 'fa-times' },
+              ].map(tab => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`pb-4 pt-4 font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
+                    activeTab === tab.key
+                      ? 'text-purple-600 border-b-2 border-purple-600'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <i className={`fas ${tab.icon}`}></i>
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Auctions List */}
-          {auctions.length > 0 ? (
+          {filteredAuctions.length > 0 ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {auctions.map((auction) => {
+              {filteredAuctions.map((auction) => {
                 const auctionStatus = getAuctionStatus(auction);
                 
                 return (
@@ -116,6 +159,17 @@ const Auctions = () => {
                         <h3 className="text-xl font-bold text-gray-900 mb-1">{auction.title}</h3>
                         <p className="text-sm text-gray-600 mb-3">by {auction.author}</p>
                         
+                        {/* Status pill */}
+                        <div className="mb-3">
+                          <span className={`text-xs px-2 py-1 rounded-full ${
+                            auction.status === 'approved' ? 'bg-green-100 text-green-700' :
+                            auction.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                            'bg-red-100 text-red-700'
+                          }`}>
+                            {auction.status || 'approved'}
+                          </span>
+                        </div>
+                        
                         {/* Details */}
                         <div className="space-y-2 mb-4">
                           <div className="flex items-center gap-2 text-sm">
@@ -135,22 +189,6 @@ const Auctions = () => {
                             <span className="text-gray-600">Base Price:</span>
                             <span className="font-bold text-purple-600 text-lg">₹{auction.basePrice}</span>
                           </div>
-
-                          {auction.bids && auction.bids.length > 0 && (
-                            <div className="flex items-center gap-2 text-sm">
-                              <i className="fas fa-gavel text-indigo-600 w-4"></i>
-                              <span className="text-gray-600">Current Bid:</span>
-                              <span className="font-bold text-indigo-600 text-lg">
-                                ₹{auction.bids[auction.bids.length - 1].amount}
-                              </span>
-                            </div>
-                          )}
-
-                          <div className="flex items-center gap-2 text-sm">
-                            <i className="fas fa-users text-purple-600 w-4"></i>
-                            <span className="text-gray-600">Total Bids:</span>
-                            <span className="font-medium text-gray-900">{auction.bids?.length || 0}</span>
-                          </div>
                         </div>
 
                         {/* Timeline */}
@@ -165,19 +203,15 @@ const Auctions = () => {
                           </div>
                         </div>
 
-                        {/* Recent Bids */}
-                        {auction.bids && auction.bids.length > 0 && (
-                          <div className="mt-4 border-t border-gray-200 pt-3">
-                            <p className="text-sm font-medium text-gray-700 mb-2">Recent Bids:</p>
-                            <div className="space-y-1 max-h-24 overflow-y-auto">
-                              {auction.bids.slice(-3).reverse().map((bid, index) => (
-                                <div key={index} className="flex items-center justify-between text-xs bg-gray-50 px-3 py-2 rounded">
-                                  <span className="text-gray-600">Bidder {auction.bids.length - index}</span>
-                                  <span className="font-semibold text-indigo-600">₹{bid.amount}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
+                        {/* Rejection reason */}
+                        {auction.status === 'rejected' && auction.rejectionReason && (
+                          <button
+                            onClick={() => setRejectionDialog({ open: true, reason: auction.rejectionReason })}
+                            className="mt-3 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition-colors flex items-center gap-2"
+                          >
+                            <i className="fas fa-info-circle"></i>
+                            View Reason
+                          </button>
                         )}
                       </div>
                     </div>
@@ -188,19 +222,41 @@ const Auctions = () => {
           ) : (
             <div className="text-center py-16">
               <i className="fas fa-gavel text-6xl text-gray-300 mb-4"></i>
-              <h3 className="text-xl font-semibold text-gray-600 mb-2">No auctions yet</h3>
-              <p className="text-gray-500 mb-6">Start your first antique book auction</p>
-              <Link
+              <h3 className="text-xl font-semibold text-gray-600 mb-2">No {activeTab} antique books</h3>
+              <p className="text-gray-500 mb-6">Submit an antique book for verification to get started</p>
+              {/* <Link
                 to="/publisher/sell-antique"
                 className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg transition-colors"
               >
-                <i className="fas fa-gavel"></i>
-                Start New Auction
-              </Link>
+                <i className="fas fa-paper-plane"></i>
+                Send for Verification
+              </Link> */}
             </div>
           )}
         </div>
       </div>
+
+      {/* Rejection Reason Dialog */}
+      <AlertDialog open={rejectionDialog.open} onOpenChange={(open) => setRejectionDialog({ open, reason: rejectionDialog.reason })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              <i className="fas fa-exclamation-circle text-red-600 mr-2"></i>
+              Rejection Reason
+            </AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogDescription>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+              <p className="text-gray-800 text-sm leading-relaxed">{rejectionDialog.reason}</p>
+            </div>
+          </AlertDialogDescription>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setRejectionDialog({ open: false, reason: '' })}>
+              Close
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

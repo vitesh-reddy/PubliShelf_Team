@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { FaTimes } from "react-icons/fa";
 import { toast } from "sonner";
-import { banPublisher, approvePublisher, rejectPublisher } from "../../../../services/admin.services.js";
+import { togglePublisherBan, approvePublisher, rejectPublisher } from "../../../../services/admin.services.js";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,15 +30,15 @@ const PublisherTable = ({ publishers, onUpdate }) => {
 
     try {
       setShowBanDialog(false);
-      const response = await banPublisher(selectedPublisher._id);
+      const response = await togglePublisherBan(selectedPublisher._id);
       if (response.success) {
-        toast.success("Publisher banned successfully.");
+        toast.success(response.message || "Publisher status updated successfully.");
         onUpdate(); // Refresh data
       } else {
-        toast.error(response.message || "Failed to ban publisher.");
+        toast.error(response.message || "Failed to update publisher status.");
       }
     } catch (error) {
-      console.error("Error banning publisher:", error);
+      console.error("Error updating publisher status:", error);
       toast.error("An error occurred. Please try again.");
     } finally {
       setSelectedPublisher(null);
@@ -116,9 +116,16 @@ const PublisherTable = ({ publishers, onUpdate }) => {
                 {publisher.publishingHouse}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm">
-                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                  Approved
-                </span>
+                <div className="flex gap-2">
+                  <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                    Approved
+                  </span>
+                  {publisher.banned && (
+                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                      Banned
+                    </span>
+                  )}
+                </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm">
                 <div className="flex space-x-2">
@@ -136,9 +143,13 @@ const PublisherTable = ({ publishers, onUpdate }) => {
                   </button>
                   <button
                     onClick={() => handleBan(publisher)}
-                    className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-300 text-red-800 hover:bg-red-400"
+                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      publisher.banned
+                        ? "bg-green-100 text-green-800 hover:bg-green-200"
+                        : "bg-red-300 text-red-800 hover:bg-red-400"
+                    }`}
                   >
-                    Ban {publisher.publishingHouse}
+                    {publisher.banned ? "Unban" : "Ban"} {publisher.publishingHouse}
                   </button>
                 </div>
               </td>
@@ -211,19 +222,32 @@ const PublisherTable = ({ publishers, onUpdate }) => {
         </div>
       )}
 
-      {/* Ban Confirmation Dialog */}
+      {/* Ban/Unban Confirmation Dialog */}
       <AlertDialog open={showBanDialog} onOpenChange={setShowBanDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Ban Publisher</AlertDialogTitle>
+            <AlertDialogTitle>
+              {selectedPublisher?.banned ? "Unban Publisher" : "Ban Publisher"}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to ban <strong>{selectedPublisher?.publishingHouse}</strong>? This action will prevent them from accessing the platform.
+              {selectedPublisher?.banned ? (
+                <>
+                  Are you sure you want to unban <strong>{selectedPublisher?.publishingHouse}</strong>? This will allow them to access the platform again.
+                </>
+              ) : (
+                <>
+                  Are you sure you want to ban <strong>{selectedPublisher?.publishingHouse}</strong>? This action will prevent them from accessing the platform.
+                </>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmBan} className="bg-red-600 hover:bg-red-700">
-              Ban Publisher
+            <AlertDialogAction
+              onClick={confirmBan}
+              className={selectedPublisher?.banned ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"}
+            >
+              {selectedPublisher?.banned ? "Unban Publisher" : "Ban Publisher"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

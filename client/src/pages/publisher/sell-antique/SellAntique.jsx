@@ -51,6 +51,7 @@ const SellAntique = () => {
         setFormData((prev) => ({ ...prev, auctionEnd: "" }));
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.auctionStart]);
 
 
@@ -167,7 +168,7 @@ const SellAntique = () => {
       newErrors.basePrice = "Base price must be a number greater than 0.";
       isValid = false;
     } else if (basePrice > 1000000) {
-      newErrors.basePrice = "Base price seems too high.";
+      newErrors.basePrice = "Base price seems to high.";
       isValid = false;
     }
 
@@ -232,7 +233,8 @@ const SellAntique = () => {
       setLoading(true);
       const response = await sellAntique(submitData);
       if (response.success) {
-        toast.success("Auction created successfully!");
+        // toast : successfully sent for verification
+        toast.success("Successfully sent for verification");
         navigate("/publisher/dashboard");
       } else {
         toast.error("Failed to create auction. " + response.message);
@@ -498,7 +500,7 @@ const SellAntique = () => {
                   loading ? "opacity-70 cursor-not-allowed" : ""
                 }`}
               >
-                {loading ? "Starting..." : "Start Auction"}
+                {loading ? "Submitting..." : "Send for Verification"}
               </button>
             </div>
           </form>
