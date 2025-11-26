@@ -236,3 +236,52 @@ Received (bytes):           1006000
 
 running (10.6s), 000/200 VUs, 2000 complete and 0 interrupted iterations
 default ✓ [ 100% ] 200 VUs  10s
+
+------------------------------------------ after caching test 3 --------------------------------------------------------
+
+============================================================
+               📌 K6 Auction Endpoint Test
+============================================================
+🕒 Timestamp: 2025-11-26T17:18:02.417Z
+
+🔧 Test Configuration
+------------------------------------------------------------
+Virtual Users (VUs):        500
+Test Duration:              10s
+Endpoint Tested:            GET /auction-poll/691479d8407e1fae9a8a35b6
+
+📊 Request Summary
+------------------------------------------------------------
+Total Requests:             4898
+Requests Per Second (avg):  445.22
+
+❗ Errors
+------------------------------------------------------------
+Failed Requests:            5.84%
+HTTP Errors (non-200):      0
+
+⏱️ Response Time (ms)
+------------------------------------------------------------
+Average:                    68.38
+Minimum:                    0.00
+Maximum:                    567.09
+
+Percentiles:
+  - p(50):                  0.00
+  - p(75):                  0.00
+  - p(90):                  276.76
+  - p(95):                  436.71
+  - p(99):                  0.00
+
+📦 Data Transfer
+------------------------------------------------------------
+Sent (bytes):               2209148
+Received (bytes):           2319836
+
+============================================================
+                     🔁 End of Report
+============================================================
+
+
+running (11.0s), 000/500 VUs, 4898 complete and 0 interrupted iterations
+default ✓ [ 100% ] 500 VUs  10s

@@ -1,33 +1,29 @@
 import http from "k6/http";
 import { sleep, check } from "k6";
 
-// --------------------------------------------------------
-// 🔧 Global Config Variables
-// --------------------------------------------------------
 export const TEST_BASE_URL = "http://localhost:3000";
 export const AUCTION_ID = "691479d8407e1fae9a8a35b6";
 export const AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MTc4M2JmYWEyMzJlODdhNjlhNWUwZSIsInJvbGUiOiJidXllciIsImZpcnN0bmFtZSI6IlZpdGVzaCIsImxhc3RuYW1lIjoiUmVkZHkiLCJlbWFpbCI6ImJ1eTFAZ21haWwuY29tIiwiaWF0IjoxNzY0MDk1NTk2LCJleHAiOjE3NjQxODE5OTZ9.X3wQqzKO_-2Vo_MMsB-fsF_WJGgnBpBvn4kTlgNYIJA";
 
-export const NUMBER_OF_USERS = 200; 
+export const NUMBER_OF_USERS = 500; 
 export const TEST_DURATION = "10s";
 
-// --------------------------------------------------------
-// 🧪 K6 Options (IMPORTANT FIX ADDED HERE)
-// --------------------------------------------------------
 export const options = {
   vus: NUMBER_OF_USERS,
   duration: TEST_DURATION,
-  noVUConnectionReuse: true,          // prevents noisy stdout
-  summaryTimeUnit: "ms",              // clean time units
+  noVUConnectionReuse: true, 
+  summaryTimeUnit: "ms", 
   consoleOutput: "disable",
 };
 
-// --------------------------------------------------------
-// 🧬 Test Execution
-// --------------------------------------------------------
+/* -------------------------- Execution --------------------------
+cd C:\Users\klvit\Documents\PubliShelf_Team\tests
+k6 run polling_test.js >> auction_test_results.txt
+-----------------------------------------------------------------*/
+
 export default function () {
   const url1 = `${TEST_BASE_URL}/api/buyer/auction-item-detail/${AUCTION_ID}`;
-  const url2 = `${TEST_BASE_URL}/api/buyer/auction-poll/${AUCTION_ID}?lastBidTime=2025-11-26T08:54:53.494Z`;
+  const url2 = `${TEST_BASE_URL}/api/buyer/auction-poll/${AUCTION_ID}?lastBidTime=2025-11-26T09:19:51.156Z`;
 
   const cookies = { token: AUTH_TOKEN };
   const headers = { "Content-Type": "application/json" };
@@ -43,9 +39,6 @@ export default function () {
   sleep(1);
 }
 
-// --------------------------------------------------------
-// 📄 Clean Summary (stdout only — use >> to append to file)
-// --------------------------------------------------------
 export function handleSummary(data) {
   const timestamp = new Date().toISOString();
   const metrics = data.metrics;
