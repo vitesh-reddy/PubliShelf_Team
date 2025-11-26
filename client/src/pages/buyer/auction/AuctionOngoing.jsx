@@ -121,11 +121,13 @@ const AuctionOngoing = () => {
     return 500;
   };
 
+  // Initial data load (only on mount)
+  useEffect(() => {
+    fetchFullAuction();
+  }, [id]);
+
   // Dynamic polling with interval adjustment
   useEffect(() => {
-    // Initial load - fetch full auction data
-    fetchFullAuction();
-
     let pollIntervalId;
     let reevaluateIntervalId;
 
@@ -165,7 +167,7 @@ const AuctionOngoing = () => {
       clearInterval(pollIntervalId);
       clearInterval(reevaluateIntervalId);
     };
-  }, [id, book?.auctionEnd, fullDataLoaded, isBidding]);
+  }, [book?.auctionEnd, fullDataLoaded, isBidding]);
 
   // Countdown for next sync
   useEffect(() => {
@@ -241,13 +243,15 @@ const AuctionOngoing = () => {
           // Update lastBidTime immediately in both state and ref
           lastBidTimeRef.current = latestBid.bidTime;
           setLastBidTime(latestBid.bidTime);
-        } else {
-          // No new bids, just update current price
+        }
+        // If no new bids and not cached, update current price
+        else if (!pollData.cached && pollData.currentPrice !== undefined) {
           setBook(prev => ({
             ...prev,
             currentPrice: pollData.currentPrice
           }));
         }
+        // If cached (hasNewBids: false, cached: true), don't update anything - state is already correct
         
         // Recalculate interval based on current time left
         if (book?.auctionEnd) {
@@ -312,8 +316,17 @@ const AuctionOngoing = () => {
         setShowBidModal(false);
         setBidAmount("");
         
-        // Fetch fresh data from server (server is source of truth)
-        await fetchIncrementalUpdate();
+        // Update state with response data (no refetch needed)
+        const { currentPrice, newBid } = response.data;
+        setBook(prev => ({
+          ...prev,
+          currentPrice: currentPrice,
+          biddingHistory: [newBid, ...(prev.biddingHistory || [])]
+        }));
+        
+        // Update lastBidTime for polling
+        lastBidTimeRef.current = newBid.bidTime;
+        setLastBidTime(newBid.bidTime);
       } else {
         toast.error(response.message || "Failed to place bid");
       }

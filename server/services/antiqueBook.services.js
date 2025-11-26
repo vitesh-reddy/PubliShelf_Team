@@ -1,6 +1,9 @@
 //services/antiqueBook.services.js
 import AntiqueBook from "../models/AntiqueBook.model.js";
 
+// In-memory cache for auction lastBidTime (auctionId -> lastBidTime)
+const auctionBidTimeCache = new Map();
+
 export const addBid = async (bookId, bidderId, bidAmount) => {
   const book = await AntiqueBook.findById(bookId);
 
@@ -10,15 +13,12 @@ export const addBid = async (bookId, bidderId, bidAmount) => {
 
   // Enforce only approved and active auctions accept bids
   const now = new Date();
-  if (book.status !== 'approved') {
+  if (book.status !== 'approved')
     throw new Error("Bidding not allowed: auction not approved");
-  }
-  if (now < new Date(book.auctionStart)) {
+  if (now < new Date(book.auctionStart))
     throw new Error("Bidding not allowed: auction hasn't started");
-  }
-  if (now > new Date(book.auctionEnd)) {
+  if (now > new Date(book.auctionEnd))
     throw new Error("Bidding not allowed: auction has ended");
-  }
 
   // Enforce bid increment rules (at least basePrice, and greater than currentPrice)
   const minAllowed = Math.max(book.basePrice || 0, book.currentPrice || 0);
@@ -34,6 +34,15 @@ export const addBid = async (bookId, bidderId, bidAmount) => {
   book.currentPrice = bidAmount;
 
   await book.save();
+  
+  // Populate the new bidder info for response
+  await book.populate('biddingHistory.bidder', 'firstname lastname email');
+  
+  // Update cache with new lastBidTime
+  const lastBid = book.biddingHistory[book.biddingHistory.length - 1];
+  if (lastBid && lastBid.bidTime)
+    auctionBidTimeCache.set(bookId.toString(), lastBid.bidTime.toISOString());
+  
   return book;
 };
 
@@ -101,29 +110,45 @@ export const getAuctionItemById = async (bookId) => {
   const book = await AntiqueBook.findById(bookId)
     .populate("biddingHistory.bidder", "firstname lastname email")
     .lean();
-  if (!book) {
+  if (!book)
     throw new Error("Antique book not found");
-  }
-  if (book.status !== 'approved') {
+
+  if (book.status !== 'approved')
     throw new Error("Auction not available");
-  }
   return book;
 };
 
 export const getAuctionPollingData = async (bookId, lastBidTime) => {
-  // Step 1: Quick validation - auction exists and is approved
+  const cachedLastBidTime = auctionBidTimeCache.get(bookId.toString());
+  
+  // Step 1: Check cache for early return (NO DB query)
+  if (lastBidTime && cachedLastBidTime && lastBidTime === cachedLastBidTime) {
+    return {
+      hasNewBids: false,
+      newBids: [],
+      timestamp: new Date(),
+      cached: true
+    };
+  }
+  
+  // Step 2: Cache miss - validate auction exists and is approved
   const book = await AntiqueBook.findById(bookId)
     .select('status currentPrice')
     .lean();
   
-  if (!book) {
+  if (!book) 
     throw new Error("Auction not found");
-  }
-  if (book.status !== 'approved') {
-    throw new Error("Auction not available");
-  }
   
-  // Step 2: Fetch ONLY new bids since lastBidTime
+  if (book.status !== 'approved')
+    throw new Error("Auction not available");
+  
+  if (!book) 
+    throw new Error("Auction not found");
+  
+  if (book.status !== 'approved')
+    throw new Error("Auction not available");
+
+  
   let newBids = [];
   
   if (lastBidTime) {
@@ -156,11 +181,21 @@ export const getAuctionPollingData = async (bookId, lastBidTime) => {
     }
   }
   
-  // Step 3: Return ONLY what changes during auction
+  // Step 4: Update cache with latest bidTime
+  if (newBids.length > 0) {
+    const latestBid = newBids.reduce((latest, bid) => 
+      new Date(bid.bidTime) > new Date(latest.bidTime) ? bid : latest
+    );
+    auctionBidTimeCache.set(bookId.toString(), latestBid.bidTime.toISOString());
+  } else if (lastBidTime && !cachedLastBidTime)
+    auctionBidTimeCache.set(bookId.toString(), lastBidTime);
+  
+  // Step 5: Return ONLY what changes during auction
   return {
     currentPrice: book.currentPrice,    // Only field that changes
     newBids: newBids,                   // Only new bids
     hasNewBids: newBids.length > 0,     // Convenience flag
-    timestamp: new Date()               // Server time for debugging
+    timestamp: new Date(),              // Server time for debugging
+    cached: false                       // Debug flag
   };
 };

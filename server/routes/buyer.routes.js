@@ -1,33 +1,7 @@
 //routes/buyer.routes.js
 import express from "express";
 import { protect } from "../middleware/auth.middleware.js";
-import {
-  getBuyerDashboard,
-  getBuyerSearchPage,
-  searchBooksHandler,
-  filterBooksHandler,
-  createBuyerSignup,
-  getProductDetail,
-  getBuyerCart,
-  addToCart,
-  removeFromCart,
-  addToWishlist,
-  removeFromWishlist,
-  updateCartQuantity,
-  placeOrderController,
-  getBuyerAuctionPage,
-  getAuctionItemDetail,
-  getAuctionOngoing,
-  getAuctionPollData,
-  placeBid,
-  getBuyerProfile,
-  updateBuyerProfile,
-  updateBuyerProfileById,
-  getBuyerAddresses,
-  addBuyerAddress,
-  updateBuyerAddress,
-  deleteBuyerAddress
-} from "../controllers/buyer.controller.js";
+import { getBuyerDashboard, getBuyerSearchPage, searchBooksHandler, filterBooksHandler, createBuyerSignup, getProductDetail, getBuyerCart, addToCart, removeFromCart, addToWishlist, removeFromWishlist, updateCartQuantity, placeOrderController, getBuyerAuctionPage, getAuctionItemDetail, getAuctionOngoing, getAuctionPollData, placeBid, getBuyerProfile, updateBuyerProfile, updateBuyerProfileById, getBuyerAddresses, addBuyerAddress, updateBuyerAddress, deleteBuyerAddress } from "../controllers/buyer.controller.js";
 
 const router = express.Router();
 

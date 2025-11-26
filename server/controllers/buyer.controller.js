@@ -520,12 +520,20 @@ export const placeBid = async (req, res) => {
     const bidderId = req.user.id;
     const updatedBook = await addBid(auctionId, bidderId, bidAmount);
 
+    // Return only the new bid (last entry) to reduce data transfer
+    const newBid = updatedBook.biddingHistory[updatedBook.biddingHistory.length - 1];
+    
     res.status(200).json({
       success: true,
       message: "Bid placed successfully",
       data: {
         currentPrice: updatedBook.currentPrice,
-        biddingHistory: updatedBook.biddingHistory
+        newBid: {
+          _id: newBid._id,
+          bidder: newBid.bidder,
+          bidAmount: newBid.bidAmount,
+          bidTime: newBid.bidTime
+        }
       }
     });
   } catch (error) {
