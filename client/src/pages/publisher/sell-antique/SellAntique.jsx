@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { sellAntique } from "../../../services/publisher.services.js";
@@ -13,24 +14,27 @@ import {
 } from "./sellAntiqueValidations.js";
 
 const SellAntique = () => {
-  const [formData, setFormData] = useState({
-    title: "",
-    author: "",
-    description: "",
-    genre: "",
-    condition: "",
-    basePrice: "",
-    auctionStart: "",
-    auctionEnd: "",
-    itemImage: null,
-    authenticationImages: [],
-  });
-
   const [imagePreview1, setImagePreview1] = useState(null);
   const [authPreviews, setAuthPreviews] = useState([]); // previews for multiple files
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState({});
   const navigate = useNavigate();
+  const { register, handleSubmit, watch, setValue, setError, clearErrors, formState: { errors, touchedFields, isSubmitted } } = useForm({
+    mode: 'onBlur',
+    reValidateMode: 'onChange',
+    defaultValues: {
+      title: '',
+      author: '',
+      description: '',
+      genre: '',
+      condition: '',
+      basePrice: '',
+      auctionStart: '',
+      auctionEnd: '',
+      itemImage: null,
+      authenticationImages: []
+    }
+  });
+  const formData = watch();
 
   // ----------------------------
   // Date minimum setters
@@ -62,82 +66,29 @@ const SellAntique = () => {
     endInput.min = minISO;
 
     if (formData.auctionEnd && formData.auctionEnd < minISO) {
-      setFormData((prev) => ({ ...prev, auctionEnd: "" }));
+      setValue('auctionEnd', '', { shouldValidate: true });
     }
-  }, [formData.auctionStart, formData.auctionEnd]);
+  }, [formData.auctionStart, formData.auctionEnd, setValue]);
 
   // ----------------------------
   // Input Handlers
   // ----------------------------
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    // Clear existing error first
-    setErrors((prev) => ({ ...prev, [name]: "" }));
-
-    // Immediate date validations
-    if (name === "auctionStart") {
-      if (!value) {
-        setErrors((prev) => ({ ...prev, auctionStart: "Auction start date & time is required." }));
-      } else {
-        const startDate = new Date(value);
-        const now = new Date();
-        if (startDate < now) {
-          setErrors((prev) => ({ ...prev, auctionStart: "Auction start must be in the future." }));
-        }
-        // If end exists ensure gap
-        if (formData.auctionEnd) {
-          const endDate = new Date(formData.auctionEnd);
-          if (endDate <= new Date(startDate.getTime() + 60 * 60 * 1000)) {
-            setErrors((prev) => ({ ...prev, auctionEnd: "Auction end must be at least 1 hour after start." }));
-          } else {
-            setErrors((prev) => ({ ...prev, auctionEnd: "" }));
-          }
-        }
-      }
-    }
-    if (name === "auctionEnd") {
-      if (!value) {
-        setErrors((prev) => ({ ...prev, auctionEnd: "Auction end date & time is required." }));
-      } else if (formData.auctionStart) {
-        const startDate = new Date(formData.auctionStart);
-        const endDate = new Date(value);
-        if (endDate <= new Date(startDate.getTime() + 60 * 60 * 1000)) {
-          setErrors((prev) => ({ ...prev, auctionEnd: "Auction end must be at least 1 hour after start." }));
-        }
-      }
-    }
-
-    // Inline Title validation
-    if (name === "title") {
-      const trimmed = value.trim();
-      if (!trimmed) {
-        setErrors((prev) => ({ ...prev, title: "Book title is required." }));
-      }
-      //  else if (!alphabetsOnlyRegex.test(trimmed)) {
-      //   setErrors((prev) => ({ ...prev, title: "Book title must contain only alphabets." }));
-      // } 
-      else if (trimmed.length < 2) {
-        setErrors((prev) => ({ ...prev, title: "Book title must be at least 2 characters." }));
-      } else {
-        setErrors((prev) => ({ ...prev, title: "" }));
-      }
-    }
-
-    // Inline Author validation
-    if (name === "author") {
-      const trimmed = value.trim();
-      if (!trimmed) {
-        setErrors((prev) => ({ ...prev, author: "Author name is required." }));
-      } else if (!alphabetsOnlyRegex.test(trimmed)) {
-        setErrors((prev) => ({ ...prev, author: "Author name must contain only alphabets." }));
-      } else if (trimmed.length < 2) {
-        setErrors((prev) => ({ ...prev, author: "Author name must be at least 2 characters." }));
-      } else {
-        setErrors((prev) => ({ ...prev, author: "" }));
+  const handleReactiveDateChecks = () => {
+    const start = formData.auctionStart;
+    const end = formData.auctionEnd;
+    if (start) {
+      const startDate = new Date(start);
+      const now = new Date();
+      if (startDate < now) setError('auctionStart', { message: 'Auction start must be in the future.' }); else clearErrors('auctionStart');
+      if (end) {
+        const endDate = new Date(end);
+        if (endDate <= new Date(startDate.getTime() + 60 * 60 * 1000)) setError('auctionEnd', { message: 'Auction end must be at least 1 hour after start.' }); else clearErrors('auctionEnd');
       }
     }
   };
+  // Reactive validation between start/end times
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { handleReactiveDateChecks(); }, [formData.auctionStart, formData.auctionEnd]);
 
   // ----------------------------
   // Item Image Upload
@@ -147,13 +98,9 @@ const SellAntique = () => {
     if (!file) return;
 
     const errorMsg = validateItemImage(file);
-    if (errorMsg) {
-      setErrors((prev) => ({ ...prev, itemImage: errorMsg }));
-      return;
-    }
-
-    setFormData((prev) => ({ ...prev, itemImage: file }));
-    setErrors((prev) => ({ ...prev, itemImage: "" }));
+    if (errorMsg) { setError('itemImage', { message: errorMsg }); return; }
+    setValue('itemImage', file, { shouldValidate: true });
+    clearErrors('itemImage');
 
     const reader = new FileReader();
     reader.onload = (ev) => setImagePreview1(ev.target.result);
@@ -168,21 +115,20 @@ const SellAntique = () => {
     if (!incoming.length) return;
 
     // Merge with existing, avoid duplicates by name+size
-    setFormData((prev) => {
-      const existing = prev.authenticationImages || [];
+    const existing = formData.authenticationImages || [];
       const merged = [...existing];
       incoming.forEach(f => {
         if (!merged.some(m => m.name === f.name && m.size === f.size)) merged.push(f);
       });
       // Enforce max
       if (merged.length > MAX_AUTH_DOCS) {
-        setErrors((prevErr) => ({ ...prevErr, authenticationImages: `You can upload up to ${MAX_AUTH_DOCS} documents.` }));
-        return prev; // do not apply oversized merge
+        setError('authenticationImages', { message: `You can upload up to ${MAX_AUTH_DOCS} documents.` });
+        return;
       }
       const errorMsg = validateAuthFiles(merged);
       if (errorMsg) {
-        setErrors((prevErr) => ({ ...prevErr, authenticationImages: errorMsg }));
-        return prev;
+        setError('authenticationImages', { message: errorMsg });
+        return;
       }
       // Rebuild previews
       const previewsPromises = merged.map((file) => {
@@ -196,14 +142,12 @@ const SellAntique = () => {
         return Promise.resolve({ isImage: false, name: file.name });
       });
       Promise.all(previewsPromises).then(setAuthPreviews);
-      setErrors((prevErr) => ({ ...prevErr, authenticationImages: "" }));
-      return { ...prev, authenticationImages: merged };
-    });
+      clearErrors('authenticationImages');
+      setValue('authenticationImages', merged, { shouldValidate: true });
   };
 
   const removeAuthFile = (index) => {
-    setFormData((prev) => {
-      const arr = [...prev.authenticationImages];
+    const arr = [...(formData.authenticationImages || [])];
       arr.splice(index, 1);
       const previewsPromises = arr.map((file) => {
         if (file.type.startsWith("image/")) {
@@ -218,134 +162,47 @@ const SellAntique = () => {
       Promise.all(previewsPromises).then(setAuthPreviews);
       // Revalidate remaining
       const errorMsg = validateAuthFiles(arr);
-      setErrors((prevErr) => ({ ...prevErr, authenticationImages: errorMsg || "" }));
-      return { ...prev, authenticationImages: arr };
-    });
+    if (errorMsg) setError('authenticationImages', { message: errorMsg }); else clearErrors('authenticationImages');
+    setValue('authenticationImages', arr, { shouldValidate: true });
   };
 
   const clearItemImage = () => {
-    setFormData((prev) => ({ ...prev, itemImage: null }));
+    setValue('itemImage', null, { shouldValidate: true });
     setImagePreview1(null);
-    setErrors((prev) => ({ ...prev, itemImage: "" }));
+    clearErrors('itemImage');
   };
 
   // ----------------------------
   // Validation
   // ----------------------------
-  const validateForm = () => {
-    let newErrors = {};
-    let valid = true;
-
-    // Title
-    if (!formData.title.trim()) {
-      newErrors.title = "Book title is required.";
-    } else if (!alphabetsOnlyRegex.test(formData.title.trim())) {
-      newErrors.title = "Book title must contain only alphabets.";
-    }
-
-    // Author
-    if (!formData.author.trim()) {
-      newErrors.author = "Author name is required.";
-    } else if (!alphabetsOnlyRegex.test(formData.author.trim())) {
-      newErrors.author = "Author name must contain only alphabets.";
-    }
-
-    // Description
-    if (!formData.description.trim()) {
-      newErrors.description = "Description is required.";
-    } else if (formData.description.trim().length < 10) {
-      newErrors.description = "Description must be at least 10 characters.";
-    } else if (!descriptionRegex.test(formData.description.trim())) {
-      newErrors.description = "Description contains invalid characters.";
-    }
-
-    // Genre
-    if (!formData.genre) {
-      newErrors.genre = "Please select a genre.";
-    }
-
-    // Condition
-    if (!formData.condition) {
-      newErrors.condition = "Please select a condition.";
-    }
-
-    // Base Price
-    const basePrice = Number(formData.basePrice);
-    if (!formData.basePrice.trim()) {
-      newErrors.basePrice = "Base price is required.";
-    } else if (isNaN(basePrice) || basePrice <= 0) {
-      newErrors.basePrice = "Base price must be a positive number.";
-    }
-
-    // Item Image
-    const itemImageError = validateItemImage(formData.itemImage);
-    if (itemImageError) newErrors.itemImage = itemImageError;
-
-    // Authentication File
-  const authError = validateAuthFiles(formData.authenticationImages);
-  if (authError) newErrors.authenticationImages = authError;
-
-    // Dates
-    if (!formData.auctionStart) {
-      newErrors.auctionStart = "Auction start date & time is required.";
-    } else {
-      const startDate = new Date(formData.auctionStart);
-      const now = new Date();
-      if (startDate < now) {
-        newErrors.auctionStart = "Auction start must be in the future.";
-      }
-    }
-
-    if (!formData.auctionEnd) {
-      newErrors.auctionEnd = "Auction end date & time is required.";
-    } else if (formData.auctionStart) {
-      const start = new Date(formData.auctionStart);
-      const end = new Date(formData.auctionEnd);
-      if (end <= new Date(start.getTime() + 60 * 60 * 1000)) {
-        newErrors.auctionEnd = "Auction end must be at least 1 hour after start.";
-      }
-    }
-
-    setErrors(newErrors);
-    valid = Object.keys(newErrors).length === 0;
-    return valid;
+  const extraSubmitChecks = () => {
+    // item image
+    const itemErr = validateItemImage(formData.itemImage);
+    if (itemErr) setError('itemImage', { message: itemErr }); else clearErrors('itemImage');
+    const docsErr = validateAuthFiles(formData.authenticationImages);
+    if (docsErr) setError('authenticationImages', { message: docsErr }); else clearErrors('authenticationImages');
+    // date relationship already handled reactively
+    return !errors.itemImage && !errors.authenticationImages;
   };
 
   // ----------------------------
   // Submit
   // ----------------------------
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      return;
-    }
-
+  const onSubmit = async () => {
+    if (!extraSubmitChecks()) { window.scrollTo({ top:0, behavior:'smooth'}); return; }
     const submitData = new FormData();
-    // Append scalar fields
     const { authenticationImages, itemImage, ...rest } = formData;
-    Object.entries(rest).forEach(([k, v]) => {
-      if (v !== null && v !== undefined) submitData.append(k, v);
-    });
-    // Append files
-    if (itemImage) submitData.append("itemImage", itemImage);
-    (authenticationImages || []).forEach((file) => submitData.append("authenticationImages", file));
-
+    Object.entries(rest).forEach(([k,v]) => { if (v !== null && v !== undefined) submitData.append(k, v); });
+    if (itemImage) submitData.append('itemImage', itemImage);
+    (authenticationImages||[]).forEach(f => submitData.append('authenticationImages', f));
     try {
       setLoading(true);
       const response = await sellAntique(submitData);
-      if (response.success) {
-        toast.success("Successfully sent for verification");
-        navigate("/publisher/dashboard");
-      } else {
-        toast.error(response.message || "Failed to submit form");
-      }
+      if (response.success) { toast.success('Successfully sent for verification'); navigate('/publisher/dashboard'); }
+      else toast.error(response.message || 'Failed to submit form');
     } catch {
-      toast.error("Error submitting form");
-    } finally {
-      setLoading(false);
-    }
+      toast.error('Error submitting form');
+    } finally { setLoading(false); }
   };
 
   // ----------------------------
@@ -370,7 +227,7 @@ const SellAntique = () => {
           </div>
 
           {/* FORM */}
-          <form className="p-6 space-y-6 animate-fade-in" onSubmit={handleSubmit}>
+          <form className="p-6 space-y-6 animate-fade-in" onSubmit={handleSubmit(onSubmit)}>
 
             {/* --- Title / Author --- */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -378,24 +235,31 @@ const SellAntique = () => {
                 <label className="text-sm font-medium text-gray-700">Book Title</label>
                 <input
                   type="text"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleInputChange}
-                  className={`mt-1 w-full px-2 py-2 rounded-lg border ${errors.title ? "border-red-500" : "border-gray-300"}`}
+                  {...register('title', { validate: (v) => {
+                    const trimmed = v.trim();
+                    if (!trimmed) return 'Book title is required.';
+                    if (trimmed.length < 2) return 'Book title must be at least 2 characters.';
+                    return true; } })}
+                  aria-invalid={errors.title ? 'true' : 'false'}
+                  className={`mt-1 w-full px-3 py-2 rounded-lg bg-white shadow-sm hover:shadow-md focus:ring-2 focus:ring-purple-500 focus:border-transparent transition`}
                 />
-                {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title}</p>}
+                {(errors.title && (touchedFields.title || isSubmitted)) && <p className="text-red-500 text-xs mt-1">{errors.title.message}</p>}
               </div>
 
               <div>
                 <label className="text-sm font-medium text-gray-700">Author</label>
                 <input
                   type="text"
-                  name="author"
-                  value={formData.author}
-                  onChange={handleInputChange}
-                  className={`mt-1 w-full px-2 py-2 rounded-lg border ${errors.author ? "border-red-500" : "border-gray-300"}`}
+                  {...register('author', { validate: (v)=> {
+                    const trimmed = v.trim();
+                    if (!trimmed) return 'Author name is required.';
+                    if (!alphabetsOnlyRegex.test(trimmed)) return 'Author name must contain only alphabets.';
+                    if (trimmed.length < 2) return 'Author name must be at least 2 characters.';
+                    return true; } })}
+                  aria-invalid={errors.author ? 'true' : 'false'}
+                  className={`mt-1 w-full px-3 py-2 rounded-lg bg-white shadow-sm hover:shadow-md focus:ring-2 focus:ring-purple-500 focus:border-transparent transition`}
                 />
-                {errors.author && <p className="text-red-500 text-xs mt-1">{errors.author}</p>}
+                {(errors.author && (touchedFields.author || isSubmitted)) && <p className="text-red-500 text-xs mt-1">{errors.author.message}</p>}
               </div>
             </div>
 
@@ -404,12 +268,16 @@ const SellAntique = () => {
               <label className="text-sm font-medium text-gray-700">Description</label>
               <textarea
                 rows="4"
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                className={`mt-1 w-full px-2 py-2 rounded-lg border ${errors.description ? "border-red-500" : "border-gray-300"}`}
+                {...register('description', { validate: (v)=> {
+                  const trimmed = v.trim();
+                  if (!trimmed) return 'Description is required.';
+                  if (trimmed.length < 10) return 'Description must be at least 10 characters.';
+                  if (!descriptionRegex.test(trimmed)) return 'Description contains invalid characters.';
+                  return true; } })}
+                aria-invalid={errors.description ? 'true' : 'false'}
+                className={`mt-1 w-full px-3 py-2 rounded-lg bg-white shadow-sm hover:shadow-md focus:ring-2 focus:ring-purple-500 focus:border-transparent transition`}
               />
-              {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description}</p>}
+              {(errors.description && (touchedFields.description || isSubmitted)) && <p className="text-red-500 text-xs mt-1">{errors.description.message}</p>}
             </div>
 
             {/* --- Genre / Condition --- */}
@@ -417,10 +285,9 @@ const SellAntique = () => {
               <div>
                 <label className="text-sm font-medium text-gray-700">Genre</label>
                 <select
-                  name="genre"
-                  value={formData.genre}
-                  onChange={handleInputChange}
-                  className={`mt-1 w-full px-2 py-2 bg-white rounded-lg border ${errors.genre ? "border-red-500" : "border-gray-300"}`}
+                  {...register('genre', { validate: (v)=> v ? true : 'Please select a genre.' })}
+                  aria-invalid={errors.genre ? 'true' : 'false'}
+                  className={`mt-1 w-full px-3 py-2 bg-white rounded-lg shadow-sm hover:shadow-md focus:ring-2 focus:ring-purple-500 focus:border-transparent transition`}
                 >
                   <option value="" hidden>Select Genre</option>
                   <option>Fiction</option>
@@ -431,16 +298,15 @@ const SellAntique = () => {
                   <option>Thriller</option>
                   <option>Other</option>
                 </select>
-                {errors.genre && <p className="text-red-500 text-xs mt-1">{errors.genre}</p>}
+                {(errors.genre && (touchedFields.genre || isSubmitted)) && <p className="text-red-500 text-xs mt-1">{errors.genre.message}</p>}
               </div>
 
               <div>
                 <label className="text-sm font-medium text-gray-700">Condition</label>
                 <select
-                  name="condition"
-                  value={formData.condition}
-                  onChange={handleInputChange}
-                  className={`mt-1 w-full px-2 py-2 bg-white rounded-lg border ${errors.condition ? "border-red-500" : "border-gray-300"}`}
+                  {...register('condition', { validate: (v)=> v ? true : 'Please select a condition.' })}
+                  aria-invalid={errors.condition ? 'true' : 'false'}
+                  className={`mt-1 w-full px-3 py-2 bg-white rounded-lg shadow-sm hover:shadow-md focus:ring-2 focus:ring-purple-500 focus:border-transparent transition`}
                 >
                   <option value="" hidden>Select Condition</option>
                   <option>Mint</option>
@@ -450,7 +316,7 @@ const SellAntique = () => {
                   <option>Good</option>
                   <option>Fair</option>
                 </select>
-                {errors.condition && <p className="text-red-500 text-xs mt-1">{errors.condition}</p>}
+                {(errors.condition && (touchedFields.condition || isSubmitted)) && <p className="text-red-500 text-xs mt-1">{errors.condition.message}</p>}
               </div>
             </div>
 
@@ -460,12 +326,13 @@ const SellAntique = () => {
                 <label className="text-sm font-medium text-gray-700">Base Price (₹)</label>
                 <input
                   type="number"
-                  name="basePrice"
-                  value={formData.basePrice}
-                  onChange={handleInputChange}
-                  className={`mt-1 w-full px-2 py-2 rounded-lg border ${errors.basePrice ? "border-red-500" : "border-gray-300"}`}
+                  {...register('basePrice', { validate: (v)=> {
+                    if (!v?.toString().trim()) return 'Base price is required.';
+                    const num = Number(v); if (isNaN(num) || num <=0) return 'Base price must be a positive number.'; return true; } })}
+                  aria-invalid={errors.basePrice ? 'true' : 'false'}
+                  className={`mt-1 w-full px-3 py-2 rounded-lg bg-white shadow-sm hover:shadow-md focus:ring-2 focus:ring-purple-500 focus:border-transparent transition`}
                 />
-                {errors.basePrice && <p className="text-red-500 text-xs mt-1">{errors.basePrice}</p>}
+                {(errors.basePrice && (touchedFields.basePrice || isSubmitted)) && <p className="text-red-500 text-xs mt-1">{errors.basePrice.message}</p>}
               </div>
 
               <div>
@@ -473,12 +340,11 @@ const SellAntique = () => {
                 <input
                   type="datetime-local"
                   id="auctionStart"
-                  name="auctionStart"
-                  value={formData.auctionStart}
-                  onChange={handleInputChange}
-                  className={`mt-1 w-full px-2 py-2 rounded-lg border ${errors.auctionStart ? "border-red-500" : "border-gray-300"}`}
+                  {...register('auctionStart', { validate: (v)=> v ? true : 'Auction start date & time is required.' })}
+                  aria-invalid={errors.auctionStart ? 'true' : 'false'}
+                  className={`mt-1 w-full px-3 py-2 rounded-lg bg-white shadow-sm hover:shadow-md focus:ring-2 focus:ring-purple-500 focus:border-transparent transition`}
                 />
-                {errors.auctionStart && <p className="text-red-500 text-xs mt-1">{errors.auctionStart}</p>}
+                {(errors.auctionStart && (touchedFields.auctionStart || isSubmitted)) && <p className="text-red-500 text-xs mt-1">{errors.auctionStart.message}</p>}
               </div>
 
               <div>
@@ -486,12 +352,11 @@ const SellAntique = () => {
                 <input
                   type="datetime-local"
                   id="auctionEnd"
-                  name="auctionEnd"
-                  value={formData.auctionEnd}
-                  onChange={handleInputChange}
-                  className={`mt-1 w-full px-2 py-2 rounded-lg border ${errors.auctionEnd ? "border-red-500" : "border-gray-300"}`}
+                  {...register('auctionEnd', { validate: (v)=> v ? true : 'Auction end date & time is required.' })}
+                  aria-invalid={errors.auctionEnd ? 'true' : 'false'}
+                  className={`mt-1 w-full px-3 py-2 rounded-lg bg-white shadow-sm hover:shadow-md focus:ring-2 focus:ring-purple-500 focus:border-transparent transition`}
                 />
-                {errors.auctionEnd && <p className="text-red-500 text-xs mt-1">{errors.auctionEnd}</p>}
+                {(errors.auctionEnd && (touchedFields.auctionEnd || isSubmitted)) && <p className="text-red-500 text-xs mt-1">{errors.auctionEnd.message}</p>}
               </div>
             </div>
 
@@ -512,7 +377,7 @@ const SellAntique = () => {
                     <input type="file" accept="image/*" onChange={handleItemImageChange} className="hidden" />
                   </label>
                 </div>
-                {errors.itemImage && <p className="text-red-500 text-xs mt-2">{errors.itemImage}</p>}
+                {errors.itemImage && <p className="text-red-500 text-xs mt-2">{errors.itemImage.message}</p>}
                 {imagePreview1 && (
                   <div className="mt-3 relative inline-block group">
                     <img src={imagePreview1} className="w-48 h-64 object-cover rounded-lg shadow-md" alt="Item Preview" />
@@ -547,7 +412,7 @@ const SellAntique = () => {
                     />
                   </label>
                 </div>
-                {errors.authenticationImages && <p className="text-red-500 text-xs mt-2">{errors.authenticationImages}</p>}
+                {errors.authenticationImages && <p className="text-red-500 text-xs mt-2">{errors.authenticationImages.message}</p>}
                 {authPreviews.length > 0 && (
                   <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                     {authPreviews.map((p, idx) => (

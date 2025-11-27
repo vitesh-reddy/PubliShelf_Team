@@ -1,12 +1,14 @@
 // client/src/pages/publisher/dashboard/Dashboard.jsx
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
+import { toast } from "sonner";
 import { getProfile, updateProfile } from "../../../services/publisher.services";
 import { logout } from "../../../services/auth.services";
 import { clearAuth } from "../../../store/slices/authSlice";
 import { clearUser } from "../../../store/slices/userSlice";
 import PublisherNavbar from "../components/PublisherNavbar";
+import { useForm } from "react-hook-form";
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend, Filler } from 'chart.js';
 import { Line, Doughnut, Bar } from 'react-chartjs-2';
 import {
@@ -19,6 +21,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../../../components/ui/AlertDialog";
+import {
+  publisherNameRules,
+  publishingHouseRules,
+  emailRules,
+  currentPasswordRules,
+  newPasswordRules,
+  confirmNewPasswordRules,
+} from "./dashboardValidation";
 
 // Register ChartJS components
 ChartJS.register( CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend, Filler);
@@ -31,20 +41,23 @@ const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
-  const [formData, setFormData] = useState({
-    firstname: "",
-    lastname: "",
-    publishingHouse: "",
-    email: "",
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors, touchedFields, isSubmitted }
+  } = useForm({
+    mode: "onBlur",
+    reValidateMode: "onChange"
   });
-  const [formErrors, setFormErrors] = useState({});
-  const saveBtnRef = useRef(null);
+
+  const newPassword = watch("newPassword");
 
   useEffect(() => {
     loadProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadProfile = async () => {
@@ -52,7 +65,7 @@ const Dashboard = () => {
       const res = await getProfile();
       if (res?.success && res?.data?.user) {
         setUser(res.data.user);
-        setFormData({
+        reset({
           firstname: res.data.user.firstname,
           lastname: res.data.user.lastname,
           publishingHouse: res.data.user.publishingHouse,
@@ -70,57 +83,37 @@ const Dashboard = () => {
     }
   };
 
-  const handleInputChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    setFormErrors({});
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const { email, currentPassword, newPassword, confirmPassword } = formData;
-
-    // Current password is always required
-    if (!currentPassword) {
-      setFormErrors({ currentPasswordError: "Current password is required to update profile." });
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setFormErrors({ generalError: "Please enter a valid email address." });
-      return;
-    }
-
-    // If changing password, validate new password fields
-    if (newPassword || confirmPassword) {
-      if (newPassword !== confirmPassword) {
-        setFormErrors({ passwordError: "New passwords do not match." });
-        return;
-      }
-    }
-
+  const onSubmit = async (data) => {
     try {
-      saveBtnRef.current.innerText = "Saving...";
-      saveBtnRef.current.disabled = true;
+      const payload = {
+        firstname: data.firstname.trim(),
+        lastname: data.lastname.trim(),
+        publishingHouse: data.publishingHouse.trim(),
+        email: data.email.trim(),
+        currentPassword: data.currentPassword.trim(),
+        confirmPassword: data.newPassword ? data.confirmPassword.trim() : "",
+      };
 
-      const res = await updateProfile(formData);
+      const res = await updateProfile(payload);
+
       if (res?.success) {
         setUser(res.data);
         setShowEditDialog(false);
-        setFormData({
-          ...formData,
+        toast.success("Profile updated successfully");
+        reset({
+          firstname: res.data.firstname,
+          lastname: res.data.lastname,
+          publishingHouse: res.data.publishingHouse,
+          email: res.data.email,
           currentPassword: "",
           newPassword: "",
           confirmPassword: "",
         });
       } else {
-        setFormErrors({ generalError: res?.message || "Failed to update profile" });
+        toast.error(res?.message || "Failed to update profile");
       }
-    } catch (err) {
-      setFormErrors({ generalError: err.response?.data?.message || "Failed to update profile" });
-    } finally {
-      saveBtnRef.current.innerText = "Save Changes";
-      saveBtnRef.current.disabled = false;
+    } catch {
+      toast.error("Failed to update profile");
     }
   };
 
@@ -645,119 +638,111 @@ const Dashboard = () => {
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                {/* First Name */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
                   <input
-                    type="text"
-                    name="firstname"
-                    value={formData.firstname}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-0"
-                    required
+                    {...register("firstname", publisherNameRules("First name"))}
+                    className="w-full px-4 py-2 bg-white rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:outline-none hover:shadow-md transition-shadow duration-200"
                   />
+                  {(errors.firstname && (touchedFields.firstname || isSubmitted)) && (
+                    <p className="text-red-500 text-sm mt-1">{errors.firstname.message}</p>
+                  )}
                 </div>
 
+                {/* Last Name */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
                   <input
-                    type="text"
-                    name="lastname"
-                    value={formData.lastname}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-0"
-                    required
+                    {...register("lastname", publisherNameRules("Last name"))}
+                    className="w-full px-4 py-2 bg-white rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:outline-none hover:shadow-md transition-shadow duration-200"
                   />
+                  {(errors.lastname && (touchedFields.lastname || isSubmitted)) && (
+                    <p className="text-red-500 text-sm mt-1">{errors.lastname.message}</p>
+                  )}
                 </div>
 
+                {/* Publishing House */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Publishing House</label>
                   <input
-                    type="text"
-                    name="publishingHouse"
-                    value={formData.publishingHouse}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-0"
-                    required
+                    {...register("publishingHouse", publishingHouseRules)}
+                    className="w-full px-4 py-2 bg-white rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:outline-none hover:shadow-md transition-shadow duration-200"
                   />
+                  {(errors.publishingHouse && (touchedFields.publishingHouse || isSubmitted)) && (
+                    <p className="text-red-500 text-sm mt-1">{errors.publishingHouse.message}</p>
+                  )}
                 </div>
 
+                {/* Email */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                   <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-0"
-                    required
+                    {...register("email", emailRules)}
+                    className="w-full px-4 py-2 bg-white rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:outline-none hover:shadow-md transition-shadow duration-200"
                   />
+                  {(errors.email && (touchedFields.email || isSubmitted)) && (
+                    <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
+                  )}
                 </div>
+
+                {/* Current Password */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Current Password </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
                   <input
                     type="password"
-                    name="currentPassword"
-                    value={formData.currentPassword}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-0"
-                    required
+                    {...register("currentPassword", currentPasswordRules)}
+                    className="w-full px-4 py-2 bg-white rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:outline-none hover:shadow-md transition-shadow duration-200"
                   />
-                  {formErrors.currentPasswordError && (
-                    <p className="text-red-500 text-sm mt-1">{formErrors.currentPasswordError}</p>
+                  {(errors.currentPassword && (touchedFields.currentPassword || isSubmitted)) && (
+                    <p className="text-red-500 text-sm mt-1">{errors.currentPassword.message}</p>
                   )}
-                </div>                
+                </div>
 
+                {/* Change Password */}
                 <div className="border-t border-gray-200 pt-4 mt-4">
-                  <p className="text-sm font-medium text-gray-700 mb-1">Change Password (Optional)</p>
+                  <p className="text-sm font-medium text-gray-700 mb-2">Change Password (Optional)</p>
                   
                   <div className="space-y-3">
-
                     <div>
-                      <label className="block text-sm text-gray-600 mb-1">New Password</label>
+                      <label className="block text-sm text-gray-700 mb-1">New Password</label>
                       <input
                         type="password"
-                        name="newPassword"
-                        value={formData.newPassword}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-0"
+                        {...register("newPassword", newPasswordRules)}
+                        className="w-full px-4 py-2 bg-white rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:outline-none hover:shadow-md transition-shadow duration-200"
                       />
+                      {(errors.newPassword && (touchedFields.newPassword || isSubmitted)) && (
+                        <p className="text-red-500 text-sm mt-1">{errors.newPassword.message}</p>
+                      )}
                     </div>
 
                     <div>
-                      <label className="block text-sm text-gray-600 mb-1">Confirm New Password</label>
+                      <label className="block text-sm text-gray-700 mb-1">Confirm New Password</label>
                       <input
                         type="password"
-                        name="confirmPassword"
-                        value={formData.confirmPassword}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-0"
+                        {...register("confirmPassword", confirmNewPasswordRules(() => newPassword))}
+                        className="w-full px-4 py-2 bg-white rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:outline-none hover:shadow-md transition-shadow duration-200"
                       />
-                      {formErrors.passwordError && (
-                        <p className="text-red-500 text-sm mt-1">{formErrors.passwordError}</p>
+                      {(errors.confirmPassword && (touchedFields.confirmPassword || isSubmitted)) && (
+                        <p className="text-red-500 text-sm mt-1">{errors.confirmPassword.message}</p>
                       )}
                     </div>
                   </div>
                 </div>
 
-                {formErrors.generalError && (
-                  <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
-                    {formErrors.generalError}
-                  </div>
-                )}
-
+                {/* Buttons */}
                 <div className="flex gap-3 pt-4">
                   <button
                     type="button"
                     onClick={() => setShowEditDialog(false)}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex-1 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors duration-200"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    ref={saveBtnRef}
-                    className="flex-1 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
+                    className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors duration-200 shadow-sm hover:shadow-md"
                   >
                     Save Changes
                   </button>
