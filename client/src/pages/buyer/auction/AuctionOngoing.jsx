@@ -126,62 +126,104 @@ const AuctionOngoing = () => {
     fetchFullAuction();
   }, [id]);
 
-  // Dynamic polling with interval adjustment
+  // Dynamic polling with interval adjustment (stable coordination)
   useEffect(() => {
     let pollIntervalId;
     let reevaluateIntervalId;
+    let countdownId;
 
-    const startPolling = () => {
-      if (!book?.auctionEnd || isBidding) return; // Pause polling during bid
-      
-      const pollInterval = getPollingInterval(book.auctionEnd);
-      if (!pollInterval) {
-        // Auction ended, stop polling
-        setCurrentPollInterval(0);
-        return;
-      }
-      
-      // Set up polling for incremental updates
-      pollIntervalId = setInterval(() => {
-        if (!isBidding) { // Double-check before each poll
-          fetchIncrementalUpdate();
-        }
-      }, pollInterval);
-      
-      // Store current interval in seconds for display
-      setCurrentPollInterval(pollInterval / 1000);
-      setNextSyncIn(pollInterval / 1000);
-    };
-
-    if (fullDataLoaded) {
-      startPolling();
-      
-      // Re-evaluate polling interval every 60 seconds
-      reevaluateIntervalId = setInterval(() => {
-        clearInterval(pollIntervalId);
-        startPolling();
-      }, 60000);
+    if (!book?.auctionEnd || !fullDataLoaded) {
+      return;
     }
+
+    const pollIntervalMs = getPollingInterval(book.auctionEnd);
+    if (!pollIntervalMs) {
+      setCurrentPollInterval(0);
+      return;
+    }
+
+    const pollIntervalSec = Math.floor(pollIntervalMs / 1000);
+
+    // Only update display interval if it changed
+    setCurrentPollInterval(prev => (prev !== pollIntervalSec ? pollIntervalSec : prev));
+    // If nextSyncIn is unset or greater than current interval, set to interval
+    setNextSyncIn(prev => (typeof prev !== 'number' || prev > pollIntervalSec ? pollIntervalSec : prev));
+
+    // Poll timer
+    pollIntervalId = setInterval(() => {
+      if (!isBidding) {
+        console.debug('[Auction] Poll interval fired', {
+          at: new Date().toISOString(),
+          intervalSec: pollIntervalSec,
+          nextSyncIn
+        });
+        fetchIncrementalUpdate();
+        // After poll, reset countdown precisely to interval
+        setNextSyncIn(pollIntervalSec);
+      }
+    }, pollIntervalMs);
+
+    // Countdown timer (ticks every second)
+    countdownId = setInterval(() => {
+      if (isBidding) return; // pause countdown during bidding
+      setNextSyncIn(prev => {
+        // Trigger poll when reaching zero; avoid premature reset at 1
+        if (prev <= 1) {
+          // Fire a poll immediately and reset
+          console.debug('[Auction] Countdown reached zero, triggering poll', {
+            at: new Date().toISOString(),
+            intervalSec: pollIntervalSec
+          });
+          fetchIncrementalUpdate();
+          return pollIntervalSec;
+        }
+        const value = (prev - 1);
+        if (value <= 5) {
+          console.debug('[Auction] Countdown tick', {
+            at: new Date().toISOString(),
+            nextSyncIn: value
+          });
+        }
+        return value;
+      });
+    }, 1000);
+
+    // Re-evaluate polling interval every 60 seconds without resetting countdown unless changed
+    reevaluateIntervalId = setInterval(() => {
+      const newMs = getPollingInterval(book.auctionEnd);
+      if (!newMs) return;
+      const newSec = Math.floor(newMs / 1000);
+      if (newSec !== pollIntervalSec) {
+        console.debug('[Auction] Poll interval changed', {
+          at: new Date().toISOString(),
+          fromSec: pollIntervalSec,
+          toSec: newSec
+        });
+        // Interval changed: restart poll timer and align countdown
+        clearInterval(pollIntervalId);
+        pollIntervalId = setInterval(() => {
+          if (!isBidding) {
+            console.debug('[Auction] Poll interval fired (updated)', {
+              at: new Date().toISOString(),
+              intervalSec: newSec
+            });
+            fetchIncrementalUpdate();
+            setNextSyncIn(newSec);
+          }
+        }, newMs);
+        setCurrentPollInterval(newSec);
+        setNextSyncIn(newSec);
+      }
+    }, 60000);
 
     return () => {
       clearInterval(pollIntervalId);
       clearInterval(reevaluateIntervalId);
+      clearInterval(countdownId);
     };
   }, [book?.auctionEnd, fullDataLoaded, isBidding]);
 
-  // Countdown for next sync
-  useEffect(() => {
-    if (currentPollInterval <= 0) return;
-
-    const countdownId = setInterval(() => {
-      setNextSyncIn((prev) => {
-        if (prev <= 1) return currentPollInterval;
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(countdownId);
-  }, [currentPollInterval]);
+  // Countdown handled inside the polling effect above to avoid race conditions
 
 
   // Full data fetch (initial load only)
@@ -225,6 +267,9 @@ const AuctionOngoing = () => {
       
       if (response.success) {
         const pollData = response.data;
+
+        console.log(pollData.hasNewBids);
+        console.log(pollData)
         
         // Update book state and lastBidTime
         if (pollData.hasNewBids && pollData.newBids.length > 0) {
