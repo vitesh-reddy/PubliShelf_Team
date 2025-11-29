@@ -12,11 +12,52 @@ export const getBuyerDashboard = async (req, res) => {
     const newlyBooks = await Book.find({isDeleted: { $ne: true }}).sort({ publishedAt: -1 }).limit(8);
     const mostSoldBooks = await getTopSoldBooks();
     const trendingBooks = await getTrendingBooks();
+    
+    // Fetch ongoing and upcoming auctions for dashboard
+    const ongoingAuctions = await getOngoingAuctions();
+    const futureAuctions = await getFutureAuctions();
+    
+    // Combine and limit auctions for hero carousel and countdown cards
+    const featuredAuctions = [...ongoingAuctions.slice(0, 3), ...futureAuctions.slice(0, 3)];
+
+    // Get recent bids from all ongoing auctions for activity feed
+    const recentBidsData = [];
+    for (const auction of ongoingAuctions.slice(0, 10)) {
+      const auctionWithBids = await getAuctionItemById(auction._id);
+      if (auctionWithBids.biddingHistory && auctionWithBids.biddingHistory.length > 0) {
+        // Get last 3 bids from each auction
+        const lastBids = auctionWithBids.biddingHistory
+          .slice(-3)
+          .reverse()
+          .map(bid => ({
+            _id: bid._id,
+            bidder: bid.bidder,
+            bookTitle: auctionWithBids.title,
+            bidAmount: bid.bidAmount,
+            bidTime: bid.bidTime,
+            auctionId: auctionWithBids._id
+          }));
+        recentBidsData.push(...lastBids);
+      }
+    }
+    
+    // Sort all bids by time and take top 10
+    const recentBids = recentBidsData
+      .sort((a, b) => new Date(b.bidTime) - new Date(a.bidTime))
+      .slice(0, 10);
 
     res.status(200).json({
       success: true,
       message: "Buyer dashboard data fetched successfully",
-      data: { newlyBooks, mostSoldBooks, trendingBooks }
+      data: { 
+        newlyBooks, 
+        mostSoldBooks, 
+        trendingBooks,
+        featuredAuctions,
+        ongoingAuctions: ongoingAuctions.slice(0, 6),
+        upcomingAuctions: futureAuctions.slice(0, 6),
+        recentBids
+      }
     });
   } catch (error) {
     console.error("Error loading buyer dashboard:", error);
