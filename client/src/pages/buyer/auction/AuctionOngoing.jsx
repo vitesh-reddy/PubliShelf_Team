@@ -50,7 +50,7 @@ const CountdownProgress = ({ auctionStart, auctionEnd, isActive }) => {
         </p>
         <div className="space-y-1">
           <div className="flex justify-between text-gray-600 text-sm">
-            <span>Time Remaining</span>
+            <span>Time Elapsed</span>
             <span>100%</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-1.5">
@@ -69,7 +69,7 @@ const CountdownProgress = ({ auctionStart, auctionEnd, isActive }) => {
       </p>
       <div className="space-y-1">
         <div className="flex justify-between text-gray-600 text-sm">
-          <span>Time Remaining</span>
+          <span>Time Elapsed</span>
           <span>{Math.round(progress)}%</span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-1.5">
@@ -105,7 +105,7 @@ const AuctionOngoing = () => {
   
   const lastBidTimeRef = useRef(null);
 
-  // Calculate dynamic polling interval based on time remaining
+  // Calculate dynamic polling interval based on time Elapsed
   const getPollingInterval = (auctionEnd) => {
     // return 5000; // this will be used during presentation, please don't remove this
     const now = new Date();

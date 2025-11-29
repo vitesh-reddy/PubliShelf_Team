@@ -173,9 +173,9 @@ const AuctionItemDetail = () => {
 
                 <button
                   onClick={() => (window.location.href = `/buyer/auction-ongoing/${book._id}`)}
-                  className={`w-full bg-purple-600 text-white px-4 py-2 rounded-lg ${
+                  className={`w-full bg-purple-600 text-white px-4 py-3 rounded-lg ${
                     status === "Active" ? "hover:bg-purple-700" : "opacity-50 cursor-not-allowed"
-                  } transition-colors flex items-center justify-center space-x-2 text-sm`}
+                  } transition-colors flex items-center justify-center space-x-2 text-base '`}
                   disabled={status !== "Active"}
                 >
                   <i className="fas fa-gavel"></i>
