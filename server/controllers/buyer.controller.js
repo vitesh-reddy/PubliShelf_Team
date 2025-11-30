@@ -9,20 +9,59 @@ import Order from "../models/Order.model.js";
 
 export const getBuyerDashboard = async (req, res) => {
   try {
-    const newlyBooks = await Book.find({isDeleted: { $ne: true }}).sort({ publishedAt: -1 }).limit(8);
-    const mostSoldBooks = await getTopSoldBooks();
-    const trendingBooks = await getTrendingBooks();
-    
+    // Only select needed fields for books
+    const newlyBooks = await Book.find({isDeleted: { $ne: true }})
+      .sort({ publishedAt: -1 })
+      .limit(8)
+      .select('_id title author image price totalSold');
+
+    const mostSoldBooksRaw = await getTopSoldBooks();
+    const mostSoldBooks = mostSoldBooksRaw.map(book => ({
+      _id: book._id,
+      title: book.title,
+      author: book.author,
+      image: book.image,
+      price: book.price,
+      totalSold: book.totalSold
+    }));
+
+    const trendingBooksRaw = await getTrendingBooks();
+    const trendingBooks = trendingBooksRaw.map(book => ({
+      _id: book._id,
+      title: book.title,
+      author: book.author,
+      image: book.image,
+      price: book.price
+    }));
+
     // Fetch ongoing and upcoming auctions for dashboard
-    const ongoingAuctions = await getOngoingAuctions();
-    const futureAuctions = await getFutureAuctions();
-    
+    const ongoingAuctionsRaw = await getOngoingAuctions();
+    const futureAuctionsRaw = await getFutureAuctions();
+
+    // Only select needed fields for auctions
+    const auctionFields = auction => ({
+      _id: auction._id,
+      title: auction.title,
+      author: auction.author,
+      image: auction.image,
+      auctionStart: auction.auctionStart,
+      auctionEnd: auction.auctionEnd,
+      currentPrice: auction.currentPrice,
+      basePrice: auction.basePrice
+    });
+
+    const ongoingAuctions = ongoingAuctionsRaw.slice(0, 6).map(auctionFields);
+    const futureAuctions = futureAuctionsRaw.slice(0, 6).map(auctionFields);
+
     // Combine and limit auctions for hero carousel and countdown cards
-    const featuredAuctions = [...ongoingAuctions.slice(0, 3), ...futureAuctions.slice(0, 3)];
+    const featuredAuctions = [
+      ...ongoingAuctionsRaw.slice(0, 3).map(auctionFields),
+      ...futureAuctionsRaw.slice(0, 3).map(auctionFields)
+    ];
 
     // Get recent bids from all ongoing auctions for activity feed
     const recentBidsData = [];
-    for (const auction of ongoingAuctions.slice(0, 10)) {
+    for (const auction of ongoingAuctionsRaw.slice(0, 10)) {
       const auctionWithBids = await getAuctionItemById(auction._id);
       if (auctionWithBids.biddingHistory && auctionWithBids.biddingHistory.length > 0) {
         // Get last 3 bids from each auction
@@ -40,7 +79,6 @@ export const getBuyerDashboard = async (req, res) => {
         recentBidsData.push(...lastBids);
       }
     }
-    
     // Sort all bids by time and take top 10
     const recentBids = recentBidsData
       .sort((a, b) => new Date(b.bidTime) - new Date(a.bidTime))
@@ -54,8 +92,8 @@ export const getBuyerDashboard = async (req, res) => {
         mostSoldBooks, 
         trendingBooks,
         featuredAuctions,
-        ongoingAuctions: ongoingAuctions.slice(0, 6),
-        upcomingAuctions: futureAuctions.slice(0, 6),
+        ongoingAuctions,
+        upcomingAuctions: futureAuctions,
         recentBids
       }
     });

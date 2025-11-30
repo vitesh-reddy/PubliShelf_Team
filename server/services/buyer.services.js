@@ -223,13 +223,10 @@ export const getTopSoldBooks = async () => {
           author: "$bookDetails.author",
           price: "$bookDetails.price",
           image: "$bookDetails.image",
-          rating: "$bookDetails.rating",
-          quantity: "$bookDetails.quantity",
           totalSold: 1,
         },
       },
     ]);
-
     return topBooks;
   } catch (error) {
     throw new Error("Failed to fetch top sold books: " + error.message);
@@ -257,13 +254,9 @@ export const getTrendingBooks = async () => {
           author: "$bookDetails.author",
           price: "$bookDetails.price",
           image: "$bookDetails.image",
-          rating: "$bookDetails.rating",
-          quantity: "$bookDetails.quantity",
-          totalOrdered: 1,
         },
       },
     ]);
-
     return trendingBooks;
   } catch (error) {
     throw new Error("Failed to fetch trending books: " + error.message);

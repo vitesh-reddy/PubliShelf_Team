@@ -61,14 +61,20 @@ export const getOngoingAuctions = async () => {
     status: 'approved',
     auctionStart: { $lte: new Date() },
     auctionEnd: { $gte: new Date() },
-  }).sort({ auctionEnd: 1 }).lean();
+  })
+    .sort({ auctionEnd: 1 })
+    .select('_id title author image auctionStart auctionEnd currentPrice basePrice')
+    .lean();
 };
 
 export const getFutureAuctions = async () => {
   return await AntiqueBook.find({
     status: 'approved',
     auctionStart: { $gt: new Date() },
-  }).sort({ auctionStart: 1 }).lean();
+  })
+    .sort({ auctionStart: 1 })
+    .select('_id title author image auctionStart auctionEnd currentPrice basePrice')
+    .lean();
 };
 
 export const getEndedAuctions = async () => {
