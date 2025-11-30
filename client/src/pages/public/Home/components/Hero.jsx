@@ -30,6 +30,13 @@ const Hero = () => {
           >
             Sell Your Books
           </button>
+          <button
+            disabled={isAuthenticated}  
+            onClick={() => navigate("/manager/signup")}
+            className="bg-indigo-500 text-white px-8 py-3 font-semibold rounded-lg hover:bg-indigo-600 transform transition-all duration-300 hover:-translate-y-1 cursor-pointer"
+          >
+            Join as Manager
+          </button>
         </div>
       </div>
     </div>

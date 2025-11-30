@@ -67,7 +67,7 @@
   }
 
   .faqContentStyle {
-    @apply p-4 text-gray-600 hidden;
+    @apply p-4 text-gray-600;
   }
 }
 

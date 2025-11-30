@@ -4,6 +4,7 @@ import Hero from "./components/Hero";
 import StatsSection from "./components/StatsSection";
 import AboutSection from "./components/AboutSection";
 import FeaturedBooks from "./components/FeaturedBooks";
+import OpportunitiesSection from "./components/OpportunitiesSection";
 import FAQSection from "./components/FAQSection";
 import Footer from "../components/Footer";
 import axiosInstance from "../../../utils/axiosInstance.util";
@@ -48,6 +49,7 @@ const Home = () => {
       <StatsSection data={data.metrics} />
       <AboutSection />
       <FeaturedBooks newlyBooks={data.newlyBooks} mostSoldBooks={data.mostSoldBooks} trendingBooks={data.trendingBooks} />
+      <OpportunitiesSection />
       <FAQSection />
       <Footer />
     </div>
