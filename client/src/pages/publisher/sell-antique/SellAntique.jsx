@@ -167,9 +167,15 @@ const SellAntique = () => {
   };
 
   const clearItemImage = () => {
+    // When the user removes the item image, mark the field as empty and re-validate
     setValue('itemImage', null, { shouldValidate: true });
     setImagePreview1(null);
-    clearErrors('itemImage');
+    const err = validateItemImage(null);
+    if (err) {
+      setError('itemImage', { message: err });
+    } else {
+      clearErrors('itemImage');
+    }
   };
 
   // ----------------------------
