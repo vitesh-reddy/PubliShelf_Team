@@ -33,7 +33,7 @@ const FeaturedBooks = ({ newlyBooks, mostSoldBooks, trendingBooks }) => {
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            entry.target.classList.add("animate-fade-in");
+            entry.target.classList.add("animate-home-fade-in");
           }
         });
       },
@@ -78,7 +78,7 @@ const FeaturedBooks = ({ newlyBooks, mostSoldBooks, trendingBooks }) => {
             {carousels[activeTab].map((book, idx) => (
               <div
                 key={book._id}
-                className="bookCardStyle snap-start bg-white rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 transform hover:-translate-y-1 cursor-pointer min-w-[220px] max-w-xs flex-shrink-0 animate-fade-in opacity-0"
+                className="bookCardStyle snap-start bg-white rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 transform hover:-translate-y-1 cursor-pointer min-w-[220px] max-w-xs flex-shrink-0 animate-home-fade-in opacity-0"
                 onClick={() => navigate(`/buyer/product-detail/${book._id}`)}
                 style={{ transition: "box-shadow 0.3s, transform 0.3s" }}
               >
