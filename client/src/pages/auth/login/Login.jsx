@@ -143,7 +143,7 @@ const Login = () => {
               label="Email address"
               name="email"
               type="email"
-              placeholder="user@gmail.com"
+              placeholder="user@publishelf.com"
               iconClass="fas fa-envelope"
               register={register}
               rules={emailRules}

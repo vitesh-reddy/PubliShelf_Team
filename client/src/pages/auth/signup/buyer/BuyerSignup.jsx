@@ -115,11 +115,11 @@ const BuyerSignup = () => {
         >
           <div className="grid grid-cols-2 gap-4">
             {/* First Name */}
-            <div>
+            <div className="relative">
               <label className="block text-sm font-medium text-gray-700">First Name</label>
               <input
                 type="text"
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 focus:ring-2 focus:ring-purple-500"
                 {...register("firstname", {
                   required: "First name is required.",
                   validate: {
@@ -130,15 +130,15 @@ const BuyerSignup = () => {
                 })}
                 onBlur={() => trigger("firstname")}
               />
-              {errors.firstname && <p className="text-red-500 text-[11px]">{errors.firstname.message}</p>}
+              {errors.firstname && <p className="absolute -bottom-4 inset-x-0 text-red-500 text-[11px]">{errors.firstname.message}</p>}
             </div>
 
             {/* Last Name */}
-            <div>
+            <div className="relative">
               <label className="block text-sm font-medium text-gray-700">Last Name</label>
               <input
                 type="text"
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 focus:ring-2 focus:ring-purple-500"
                 {...register("lastname", {
                   required: "Last name is required.",
                   validate: {
@@ -149,12 +149,12 @@ const BuyerSignup = () => {
                 })}
                 onBlur={() => trigger("lastname")}
               />
-              {errors.lastname && <p className="text-red-500 text-[11px]">{errors.lastname.message}</p>}
+              {errors.lastname && <p className="absolute -bottom-4 inset-x-0 text-red-500 text-[11px]">{errors.lastname.message}</p>}
             </div>
           </div>
 
           {/* Email */}
-          <div>
+          <div className="relative">
             <label className="block text-sm font-medium text-gray-700">Email address</label>
             <div className="mt-1 relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -162,8 +162,8 @@ const BuyerSignup = () => {
               </div>
               <input
                 type="email"
-                placeholder="you@example.com"
-                className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                placeholder="buyer@publishelf.com"
+                className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 shadow-sm hover:shadow-md transition-all duration-200 rounded-lg focus:ring-2 focus:ring-purple-500"
                 {...register("email", {
                   required: "Email is required.",
                   pattern: {
@@ -178,7 +178,7 @@ const BuyerSignup = () => {
                 onBlur={() => trigger("email")}
               />
             </div>
-            {errors.email && <p className="text-red-500 text-sm">{errors.email.message}</p>}
+            {errors.email && <p className="absolute -bottom-4 inset-x-0 text-red-500 text-xs">{errors.email.message}</p>}
           </div>
 
           {/* Password */}
@@ -191,7 +191,7 @@ const BuyerSignup = () => {
               <input
                 type={showPassword ? "text" : "password"}
                 placeholder="••••••••"
-                className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 shadow-sm hover:shadow-md transition-all duration-200 rounded-lg focus:ring-2 focus:ring-purple-500"
                 {...register("password", {
                   required: "Password is required.",
                   minLength: {
@@ -211,8 +211,8 @@ const BuyerSignup = () => {
               >
                 <i className={`fas ${showPassword ? "fa-eye-slash" : "fa-eye"} text-gray-400`}></i>
               </button>
+            {errors.password && <p className="text-red-500 text-xs">{errors.password.message}</p>}
             </div>
-            {errors.password && <p className="text-red-500 text-sm">{errors.password.message}</p>}
 
             {/* Password Strength Meter */}
             {passwordValue && (
@@ -260,7 +260,7 @@ const BuyerSignup = () => {
           </div>
 
           {/* Confirm Password */}
-          <div>
+          <div className="relative">
             <label className="block text-sm font-medium text-gray-700">Confirm Password</label>
             <div className="mt-1 relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -270,7 +270,7 @@ const BuyerSignup = () => {
               <input
                 type="password"
                 placeholder="••••••••"
-                className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 shadow-sm hover:shadow-md transition-all duration-200 rounded-lg focus:ring-2 focus:ring-purple-500"
                 {...register("confirmPassword", {
                   required: "Please confirm your password.",
                   validate: (v) => v === passwordValue || "Passwords do not match.",
@@ -280,10 +280,8 @@ const BuyerSignup = () => {
                   trigger("password");
                 }}
               />
+              {errors.confirmPassword && <p className="absolute -bottom-4 inset-x-0 text-red-500 text-xs">{errors.confirmPassword.message}</p>}
             </div>
-            {errors.confirmPassword && (
-              <p className="text-red-500 text-sm">{errors.confirmPassword.message}</p>
-            )}
           </div>
 
           {/* Terms */}

@@ -18,7 +18,7 @@ export const TermsCheckbox = ({ name='termsAccepted', register, rules, error, on
         and{' '}
         <a href="#" className="text-purple-600 hover:text-purple-500">Privacy Policy</a>
       </label>
-      {error && <p className="text-red-500 text-xs ml-2">{error.message}</p>}
+      {error && <p className="absolute -bottom-4 inset-x-0 text-red-500 text-xs">{error.message}</p>}
     </div>
   );
 };

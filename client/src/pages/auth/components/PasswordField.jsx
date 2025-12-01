@@ -26,8 +26,8 @@ export const PasswordField = ({ name='password', label='Password', placeholder='
         >
           <i className={`fas ${show ? 'fa-eye-slash' : 'fa-eye'} text-gray-400`}></i>
         </button>
+        {error && <p className="absolute -bottom-4 inset-x-0 text-red-500 text-xs">{error.message}</p>}
       </div>
-      {error && <p className="text-red-500 text-xs mt-1">{error.message}</p>}
       {includeStrength && strengthContent}
     </div>
   );

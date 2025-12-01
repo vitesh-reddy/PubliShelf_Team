@@ -8,6 +8,11 @@
   display: none !important;
 }
 
+input:focus {
+  outline: none !important;
+  box-shadow: var(--tw-ring-shadow) !important;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;

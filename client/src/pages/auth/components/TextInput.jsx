@@ -29,8 +29,8 @@ export const TextInput = ({ label, name, type = 'text', placeholder, iconClass, 
           {...register(name, rules)}
           onBlur={() => onBlurTrigger && onBlurTrigger(name)}
         />
+        {error && <p className="absolute -bottom-4 inset-x-0 text-red-500 text-xs">{error.message}</p>}
       </div>
-      {error && <p className="text-red-500 text-xs mt-1">{error.message}</p>}
     </div>
   );
 };

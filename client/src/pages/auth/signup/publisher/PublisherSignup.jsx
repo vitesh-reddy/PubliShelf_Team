@@ -3,16 +3,7 @@ import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { signupPublisher } from "../../../../services/publisher.services.js";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "../../../../components/ui/AlertDialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle} from "../../../../components/ui/AlertDialog";
 
 const PublisherSignup = () => {
   const {
@@ -31,7 +22,7 @@ const PublisherSignup = () => {
   const navigate = useNavigate();
   const passwordValue = watch("password", "");
 
-  /* ---------------- PASSWORD STRENGTH LOGIC ---------------- */
+  /* -------- Password Strength -------- */
   const calculateStrength = (pwd) => {
     let score = 0;
     if (pwd.length >= 3) score++;
@@ -41,28 +32,19 @@ const PublisherSignup = () => {
     if (/[^A-Za-z0-9]/.test(pwd)) score++;
     return score;
   };
-
   const passwordStrength = calculateStrength(passwordValue);
 
   const getStrengthInfo = (score) => {
     switch (score) {
-      case 0:
-        return { label: "Too Weak", color: "bg-gray-300" };
-      case 1:
-        return { label: "Very Weak", color: "bg-red-400" };
-      case 2:
-        return { label: "Weak", color: "bg-orange-400" };
-      case 3:
-        return { label: "Moderate", color: "bg-yellow-400" };
-      case 4:
-        return { label: "Strong", color: "bg-green-500" };
-      case 5:
-        return { label: "Very Strong", color: "bg-purple-600" };
-      default:
-        return { label: "Too Weak", color: "bg-gray-300" };
+      case 0: return { label: "Too Weak", color: "bg-gray-300" };
+      case 1: return { label: "Very Weak", color: "bg-red-400" };
+      case 2: return { label: "Weak", color: "bg-orange-400" };
+      case 3: return { label: "Moderate", color: "bg-yellow-400" };
+      case 4: return { label: "Strong", color: "bg-green-500" };
+      case 5: return { label: "Very Strong", color: "bg-purple-600" };
+      default: return { label: "Too Weak", color: "bg-gray-300" };
     }
   };
-
   const strengthInfo = getStrengthInfo(passwordStrength);
 
   const criteria = {
@@ -70,10 +52,10 @@ const PublisherSignup = () => {
     uppercase: { ok: /[A-Z]/.test(passwordValue), hint: "Add an uppercase letter (A-Z)" },
     number: { ok: /[0-9]/.test(passwordValue), hint: "Add a number (0-9)" },
     special: { ok: /[^A-Za-z0-9]/.test(passwordValue), hint: "Add a special character (!@#$%)" },
-    min6: { ok: passwordValue.length >= 6, hint: "At least 6 characters (stronger)" },
+    min6: { ok: passwordValue.length >= 6, hint: "At least 6 characters" },
   };
 
-  /* ---------------- SUBMIT ---------------- */
+  /* -------- SUBMIT -------- */
   const onSubmit = async (data) => {
     setServerError("");
 
@@ -103,8 +85,9 @@ const PublisherSignup = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-purple-50 to-white bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-purple-50 to-white">
       <div className="max-w-md w-full">
+
         {/* Header */}
         <div className="text-center mb-10">
           <a href="/" className="inline-block">
@@ -112,26 +95,32 @@ const PublisherSignup = () => {
               PubliShelf
             </span>
           </a>
-          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">Create Publisher Account</h2>
+          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+            Create Publisher Account
+          </h2>
           <p className="mt-2 text-sm text-gray-600">
             Already have an account?{" "}
-            <a href="/auth/login" className="font-medium text-purple-600 hover:text-purple-500">
+            <a href="/auth/login" className="text-purple-600 hover:text-purple-500 font-medium">
               Sign in
             </a>
           </p>
         </div>
 
-        {/* Form */}
-        <form id="signupForm" onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        {/* FORM */}
+        <form id="signupForm" onSubmit={handleSubmit(onSubmit)}>
           <div className="bg-white p-8 shadow-lg rounded-xl space-y-6 animate-fade-in">
+
+            {/* Name Grid */}
             <div className="grid grid-cols-2 gap-4">
 
               {/* First Name */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700">First Name</label>
+              <div className="relative">
+                <label className="block text-sm text-gray-700 font-medium">First Name</label>
                 <input
                   type="text"
-                  className="mt-1 block w-full py-2 border px-3 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300
+                             rounded-lg shadow-sm hover:shadow-md transition-all duration-200
+                             focus:ring-2 focus:ring-purple-500"
                   {...register("firstname", {
                     required: "First name is required.",
                     validate: {
@@ -142,15 +131,21 @@ const PublisherSignup = () => {
                   })}
                   onBlur={() => trigger("firstname")}
                 />
-                {errors.firstname && <p className="text-red-500 text-[11px]">{errors.firstname.message}</p>}
+                {errors.firstname && (
+                  <p className="absolute -bottom-4 inset-x-0 text-red-500 text-[11px]">
+                    {errors.firstname.message}
+                  </p>
+                )}
               </div>
 
               {/* Last Name */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Last Name</label>
+              <div className="relative">
+                <label className="block text-sm text-gray-700 font-medium">Last Name</label>
                 <input
                   type="text"
-                  className="mt-1 block w-full py-2 border px-3 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300
+                             rounded-lg shadow-sm hover:shadow-md transition-all duration-200
+                             focus:ring-2 focus:ring-purple-500"
                   {...register("lastname", {
                     required: "Last name is required.",
                     validate: {
@@ -161,42 +156,55 @@ const PublisherSignup = () => {
                   })}
                   onBlur={() => trigger("lastname")}
                 />
-                {errors.lastname && <p className="text-red-500 text-[11px]">{errors.lastname.message}</p>}
+                {errors.lastname && (
+                  <p className="absolute -bottom-4 inset-x-0 text-red-500 text-[11px]">
+                    {errors.lastname.message}
+                  </p>
+                )}
               </div>
             </div>
 
             {/* Publishing House */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Publishing House Name</label>
+            <div className="relative">
+              <label className="block text-sm text-gray-700 font-medium">
+                Publishing House Name
+              </label>
               <input
                 type="text"
-                className="mt-1 block w-full py-2 border px-3 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300
+                           rounded-lg shadow-sm hover:shadow-md transition-all duration-200
+                           focus:ring-2 focus:ring-purple-500"
                 {...register("publishingHouse", {
                   required: "Publishing house name is required.",
-                    validate: {
-                      notEmpty: (v) => v.trim() !== "" || "Last name cannot be empty.",
-                      alphabetsOnly: (v) =>
-                        /^[A-Za-z0-9\s]+$/.test(v) || "Only alphabets and spaces allowed.",
-                    },
+                  validate: {
+                    notEmpty: (v) => v.trim() !== "" || "Publishing house cannot be empty.",
+                    alphabetsOnly: (v) =>
+                      /^[A-Za-z0-9\s]+$/.test(v) || "Only alphabets and numbers allowed.",
+                  },
                 })}
                 onBlur={() => trigger("publishingHouse")}
               />
               {errors.publishingHouse && (
-                <p className="text-red-500 text-sm">{errors.publishingHouse.message}</p>
+                <p className="absolute -bottom-4 inset-x-0 text-red-500 text-[11px]">
+                  {errors.publishingHouse.message}
+                </p>
               )}
             </div>
 
             {/* Email */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Business Email</label>
+            <div className="relative">
+              <label className="block text-sm text-gray-700 font-medium">Business Email</label>
               <div className="mt-1 relative">
-                <div className="absolute left-0 inset-y-0 pl-3 flex items-center pointer-events-none">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <i className="fas fa-envelope text-gray-400"></i>
                 </div>
+
                 <input
                   type="email"
-                  placeholder="business@example.com"
-                  className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  placeholder="publisher@publishelf.com"
+                  className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300
+                             shadow-sm hover:shadow-md transition-all duration-200
+                             rounded-lg focus:ring-2 focus:ring-purple-500"
                   {...register("businessEmail", {
                     required: "Business email is required.",
                     pattern: {
@@ -211,14 +219,17 @@ const PublisherSignup = () => {
                   onBlur={() => trigger("businessEmail")}
                 />
               </div>
+
               {errors.businessEmail && (
-                <p className="text-red-500 text-sm">{errors.businessEmail.message}</p>
+                <p className="absolute -bottom-4 inset-x-0 text-red-500 text-[11px]">
+                  {errors.businessEmail.message}
+                </p>
               )}
             </div>
 
             {/* Password */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Password</label>
+            <div className="relative">
+              <label className="block text-sm text-gray-700 font-medium">Password</label>
 
               <div className="mt-1 relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -228,7 +239,9 @@ const PublisherSignup = () => {
                 <input
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
-                  className="appearance-none block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  className="appearance-none block w-full pl-10 pr-10 py-2 border border-gray-300
+                             shadow-sm hover:shadow-md transition-all duration-200
+                             rounded-lg focus:ring-2 focus:ring-purple-500"
                   {...register("password", {
                     required: "Password is required.",
                     minLength: { value: 3, message: "Password must be at least 3 characters long." },
@@ -248,9 +261,12 @@ const PublisherSignup = () => {
                 </button>
               </div>
 
-              {errors.password && <p className="text-red-500 text-sm">{errors.password.message}</p>}
+              {/* Password Error — same as buyer */}
+              {errors.password && (
+                <p className="text-red-500 text-xs">{errors.password.message}</p>
+              )}
 
-              {/* --- PASSWORD STRENGTH METER (Animated) --- */}
+              {/* Strength meter */}
               {passwordValue && (
                 <div className="mt-2 relative">
                   <div className="h-2 w-full bg-gray-200 rounded">
@@ -261,7 +277,9 @@ const PublisherSignup = () => {
                   </div>
 
                   <div className="absolute top-[2px] inset-x-0 flex flex-row-reverse justify-between items-center">
-                    <p className="text-xs mt-1 text-purple-600 font-medium">{strengthInfo.label}</p>
+                    <p className="text-xs mt-1 text-purple-600 font-medium">
+                      {strengthInfo.label}
+                    </p>
 
                     <div className="h-5 mt-2 overflow-hidden relative w-[80%]">
                       {(() => {
@@ -279,11 +297,7 @@ const PublisherSignup = () => {
                         return (
                           <div
                             key={nextRequirement.key}
-                            className={`
-                              absolute left-0 text-xs flex items-center whitespace-nowrap
-                              animate-[slideIn_0.45s_ease-out]
-                              ${nextRequirement.ok ? "animate-[slideOut_0.45s_ease-in]" : ""}
-                            `}
+                            className="absolute left-0 text-xs whitespace-nowrap animate-[slideIn_0.45s]"
                           >
                             <p className="text-gray-600">{nextRequirement.hint}</p>
                           </div>
@@ -296,8 +310,10 @@ const PublisherSignup = () => {
             </div>
 
             {/* Confirm Password */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Confirm Password</label>
+            <div className="relative">
+              <label className="block text-sm text-gray-700 font-medium">
+                Confirm Password
+              </label>
 
               <div className="mt-1 relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -307,7 +323,9 @@ const PublisherSignup = () => {
                 <input
                   type="password"
                   placeholder="••••••••"
-                  className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300
+                             shadow-sm hover:shadow-md transition-all duration-200
+                             rounded-lg focus:ring-2 focus:ring-purple-500"
                   {...register("confirmPassword", {
                     required: "Please confirm your password.",
                     validate: (v) => v === passwordValue || "Passwords do not match.",
@@ -320,43 +338,51 @@ const PublisherSignup = () => {
               </div>
 
               {errors.confirmPassword && (
-                <p className="text-red-500 text-sm">{errors.confirmPassword.message}</p>
+                <p className="absolute -bottom-4 inset-x-0 text-red-500 text-[11px]">
+                  {errors.confirmPassword.message}
+                </p>
               )}
             </div>
 
             {/* Terms */}
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded cursor-pointer"
-                {...register("termsAccepted", {
-                  required: "You must agree to the Terms and Privacy Policy.",
-                })}
-                onBlur={() => trigger("termsAccepted")}
-              />
+            <div className="relative">
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded cursor-pointer"
+                  {...register("termsAccepted", {
+                    required: "You must agree to the Terms and Privacy Policy.",
+                  })}
+                  onBlur={() => trigger("termsAccepted")}
+                />
 
-              <label className="ml-2 block text-sm text-gray-700">
-                I agree to the{" "}
-                <a href="#" className="text-purple-600 hover:text-purple-500">Terms of Service</a>{" "}
-                and{" "}
-                <a href="#" className="text-purple-600 hover:text-purple-500">Privacy Policy</a>
-              </label>
+                <label className="ml-2 block text-sm text-gray-700">
+                  I agree to the{" "}
+                  <a href="#" className="text-purple-600 hover:text-purple-500">Terms of Service</a>{" "}
+                  and{" "}
+                  <a href="#" className="text-purple-600 hover:text-purple-500">Privacy Policy</a>
+                </label>
+              </div>
+
+              {errors.termsAccepted && (
+                <p className="absolute -bottom-4 inset-x-0 text-red-500 text-[11px]">
+                  {errors.termsAccepted.message}
+                </p>
+              )}
             </div>
 
-            {errors.termsAccepted && (
-              <p className="text-red-500 text-sm">{errors.termsAccepted.message}</p>
+            {/* Server Error */}
+            {serverError && (
+              <p className="text-red-500 text-sm">{serverError}</p>
             )}
 
-            {/* Global Server Error */}
-            {serverError && <p className="text-red-500 text-sm">{serverError}</p>}
-
-            {/* Submit Button */}
+            {/* Submit */}
             <button
               type="submit"
               disabled={isLoading}
               className={`w-full flex justify-center py-3 px-4 rounded-lg shadow-sm text-sm font-medium text-white 
-              ${isLoading ? "bg-purple-400 cursor-not-allowed" : "bg-purple-600 hover:bg-purple-700"}
-              focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all`}
+                ${isLoading ? "bg-purple-400 cursor-not-allowed" : "bg-purple-600 hover:bg-purple-700"}
+                focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all`}
             >
               {isLoading ? "Creating Account..." : "Create Publisher Account"}
             </button>
@@ -370,7 +396,8 @@ const PublisherSignup = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Signup Received</AlertDialogTitle>
             <AlertDialogDescription>
-              Your publisher account has been submitted for verification. You'll be able to log in once a manager approves your account.
+              Your publisher account has been submitted for verification.
+              You’ll be able to log in once a manager approves your account.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
