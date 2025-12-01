@@ -24,6 +24,7 @@ import PublisherDashboard_Old from '../pages/publisher/dashboard old/Dashboard_O
 import PublisherLayout from '../pages/publisher/components/PublisherLayout';
 
 import ManagerDashboard from '../pages/manager/dashboard/Dashboard';
+import ManagerLayout from '../pages/manager/components/ManagerLayout';
 import AuctionsLayout from '../pages/manager/auctions/AuctionsLayout';
 import ManagerAuctions from '../pages/manager/auctions/Auctions';
 import AuctionOverview from '../pages/manager/auctions/AuctionOverview';
@@ -72,22 +73,23 @@ const ProtectedRoutes = () => (
 
     {/* Manager Routes */}
     <Route element={<ProtectedRoute allowedRoles={['manager']} />}>
-      <Route path="/manager/dashboard" element={<ManagerDashboard />} />
-      <Route path="/manager/auctions" element={<AuctionsLayout />}>
-        <Route index element={<Navigate to="/manager/auctions/pending" replace />} />
-        <Route path="overview" element={<ManagerAuctionsOverview />} />
-        <Route path="pending" element={<ManagerAuctions type="pending" />} />
-        <Route path="approved" element={<ManagerAuctions type="approved" />} />
-        <Route path="rejected" element={<ManagerAuctions type="rejected" />} />
+      <Route path="/manager" element={<ManagerLayout />}>\n        <Route path="dashboard" element={<ManagerDashboard />} />
+        <Route path="auctions" element={<AuctionsLayout />}>
+          <Route index element={<Navigate to="/manager/auctions/pending" replace />} />
+          <Route path="overview" element={<ManagerAuctionsOverview />} />
+          <Route path="pending" element={<ManagerAuctions type="pending" />} />
+          <Route path="approved" element={<ManagerAuctions type="approved" />} />
+          <Route path="rejected" element={<ManagerAuctions type="rejected" />} />
+        </Route>
+        <Route path="auctions/:id/overview" element={<AuctionOverview />} />
+        <Route path="publishers" element={<PublishersLayout />}>
+          <Route index element={<Navigate to="/manager/publishers/pending" replace />} />
+          <Route path="pending" element={<Publishers type="pending" />} />
+          <Route path="active" element={<Publishers type="active" />} />
+          <Route path="banned" element={<Publishers type="banned" />} />
+        </Route>
+        <Route path="publishers/:id/overview" element={<PublisherOverview />} />
       </Route>
-      <Route path="/manager/auctions/:id/overview" element={<AuctionOverview />} />
-      <Route path="/manager/publishers" element={<PublishersLayout />}>
-        <Route index element={<Navigate to="/manager/publishers/pending" replace />} />
-        <Route path="pending" element={<Publishers type="pending" />} />
-        <Route path="active" element={<Publishers type="active" />} />
-        <Route path="banned" element={<Publishers type="banned" />} />
-      </Route>
-      <Route path="/manager/publishers/:id/overview" element={<PublisherOverview />} />
     </Route>
 
     {/* Admin Routes */}

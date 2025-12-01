@@ -7,7 +7,6 @@ import { getProfile, updateProfile } from "../../../services/manager.services";
 import { logout } from "../../../services/auth.services";
 import { clearAuth } from "../../../store/slices/authSlice";
 import { clearUser } from "../../../store/slices/userSlice";
-import ManagerNavbar from "../components/ManagerNavbar";
 import { useForm } from "react-hook-form";
 import {
   AlertDialog,
@@ -132,9 +131,7 @@ const Dashboard = () => {
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      <ManagerNavbar managerName={`${user.firstname} ${user.lastname}`} />
-
-      <div className="pt-16 pb-20">
+      <div className="pb-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Profile Header */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
