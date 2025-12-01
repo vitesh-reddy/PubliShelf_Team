@@ -3,9 +3,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { getAuctionPage } from "../../../services/antiqueBook.services.js";
 import { useUser } from '../../../store/hooks';
-// Navbar and Footer are provided by BuyerLayout
+import Pagination from '../../../components/Pagination';
 
-// 1. A new, reusable Countdown component using React hooks
 const Countdown = ({ target, type }) => {
   const [timeLeft, setTimeLeft] = useState("");
 
@@ -56,6 +55,14 @@ const AuctionPage = () => {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
+  // Pagination state for each section
+  const [ongoingPage, setOngoingPage] = useState(1);
+  const [futurePage, setFuturePage] = useState(1);
+  const [endedPage, setEndedPage] = useState(1);
+  const [sectionLoading, setSectionLoading] = useState({ ongoing: false, future: false, ended: false });
+  
+  const ITEMS_PER_PAGE = 8;
+
   useEffect(() => {
     fetchAuctions();
   }, []);
@@ -75,6 +82,43 @@ const AuctionPage = () => {
       setLoading(false);
     }
   };
+
+  // Mock loading for realistic pagination feel
+  const handlePageChange = (section, newPage) => {
+    setSectionLoading(prev => ({ ...prev, [section]: true }));
+    
+    // Simulate loading delay
+    setTimeout(() => {
+      if (section === 'ongoing') setOngoingPage(newPage);
+      else if (section === 'future') setFuturePage(newPage);
+      else if (section === 'ended') setEndedPage(newPage);
+      
+      setSectionLoading(prev => ({ ...prev, [section]: false }));
+      
+      // Scroll to section top
+      const sectionId = `${section}-section`;
+      const element = document.getElementById(sectionId);
+      if (element) {
+        const yOffset = -100; // offset for fixed header
+        const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+        window.scrollTo({ top: y, behavior: 'smooth' });
+      }
+    }, 300); // 300ms mock loading
+  };
+
+  // Paginate items
+  const getPaginatedItems = (items, page) => {
+    const startIndex = (page - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return items.slice(startIndex, endIndex);
+  };
+
+  // Calculate total pages
+  const getTotalPages = (items) => Math.ceil(items.length / ITEMS_PER_PAGE);
+
+  const paginatedOngoing = getPaginatedItems(auctions.ongoingAuctions, ongoingPage);
+  const paginatedFuture = getPaginatedItems(auctions.futureAuctions, futurePage);
+  const paginatedEnded = getPaginatedItems(auctions.endedAuctions, endedPage);
 
   if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   if (error) return <div className="min-h-screen flex items-center justify-center text-red-500">{error}</div>;
@@ -104,125 +148,177 @@ const AuctionPage = () => {
 
           {/* Ongoing Auctions */}
           {auctions.ongoingAuctions.length > 0 && (
-            <>
+            <div id="ongoing-section">
               <h1 className="text-3xl font-bold text-gray-900 mb-8">Ongoing Auctions</h1>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {auctions.ongoingAuctions.map((book) => (
-                  <div
-                    key={book._id}
-                    className="bg-white rounded-xl shadow-lg overflow-hidden transform transition-all duration-300 ease hover:translate-y-[-4px] hover:shadow-xl"
-                  >
-                    <div className="relative">
-                      <img src={book.image} alt={book.title} className="w-full h-[260px] object-contain" />
-                    </div>
-                    <div className="px-4 py-2">
-                      <h3 className="text-lg font-semibold text-gray-900">{book.title}</h3>
-                      <p className="text-gray-600 text-sm">{book.author}</p>
-                      <div className="mt-2 flex items-center justify-between">
-                        <div>
-                          <p className="text-gray-600 text-sm">Current Bid</p>
-                          <p className="text-lg font-bold text-purple-600">
-                            ₹{book.currentPrice || book.basePrice}
-                          </p>
+              
+              {sectionLoading.ongoing ? (
+                <div className="flex items-center justify-center py-20">
+                  <div className="text-center">
+                    <i className="fas fa-spinner fa-spin text-4xl text-purple-600 mb-4"></i>
+                    <p className="text-gray-600">Loading...</p>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    {paginatedOngoing.map((book) => (
+                      <div
+                        key={book._id}
+                        className="bg-white rounded-xl shadow-lg overflow-hidden transform transition-all duration-300 ease hover:translate-y-[-4px] hover:shadow-xl"
+                      >
+                        <div className="relative">
+                          <img src={book.image} alt={book.title} className="w-full h-[260px] object-contain" />
                         </div>
-                        <div>
-                          <p className="text-gray-600 text-sm">Ends in</p>
-                          {/* 4. Replaced empty <p> with Countdown component */}
-                          <Countdown target={book.auctionEnd} type="end" />
+                        <div className="px-4 py-2">
+                          <h3 className="text-lg font-semibold text-gray-900">{book.title}</h3>
+                          <p className="text-gray-600 text-sm">{book.author}</p>
+                          <div className="mt-2 flex items-center justify-between">
+                            <div>
+                              <p className="text-gray-600 text-sm">Current Bid</p>
+                              <p className="text-lg font-bold text-purple-600">
+                                ₹{book.currentPrice || book.basePrice}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-gray-600 text-sm">Ends in</p>
+                              <Countdown target={book.auctionEnd} type="end" />
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => (window.location.href = `/buyer/auction-item-detail/${book._id}`)}
+                            className="mt-4 mb-1 w-full bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+                          >
+                            View Auction
+                          </button>
                         </div>
                       </div>
-                      <button
-                        onClick={() => (window.location.href = `/buyer/auction-item-detail/${book._id}`)}
-                        className="mt-4 mb-1 w-full bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
-                      >
-                        View Auction
-                      </button>
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </>
+                  
+                  <Pagination
+                    currentPage={ongoingPage}
+                    totalPages={getTotalPages(auctions.ongoingAuctions)}
+                    onPageChange={(page) => handlePageChange('ongoing', page)}
+                  />
+                </>
+              )}
+            </div>
           )}
 
           {/* Future Auctions */}
           {auctions.futureAuctions.length > 0 && (
-            <>
+            <div id="future-section">
               <h1 className="text-3xl font-bold text-gray-900 mt-12 mb-8">Upcoming Auctions</h1>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {auctions.futureAuctions.map((book) => (
-                  <div
-                    key={book._id}
-                    className="bg-white rounded-xl shadow-lg overflow-hidden transform transition-all duration-300 ease hover:translate-y-[-4px] hover:shadow-xl"
-                  >
-                    <div className="relative">
-                      <img src={book.image} alt={book.title} className="w-full h-[260px] object-contain" />
-                    </div>
-                    <div className="px-4 py-2">
-                      <h3 className="text-lg font-semibold text-gray-900">{book.title}</h3>
-                      <p className="text-gray-600 text-sm">{book.author}</p>
-                      <div className="mt-2 flex items-center justify-between">
-                        <div>
-                          <p className="text-gray-600 text-sm">Starting Bid</p>
-                          <p className="text-lg font-bold text-purple-600">₹{book.basePrice}</p>
+              
+              {sectionLoading.future ? (
+                <div className="flex items-center justify-center py-20">
+                  <div className="text-center">
+                    <i className="fas fa-spinner fa-spin text-4xl text-purple-600 mb-4"></i>
+                    <p className="text-gray-600">Loading...</p>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    {paginatedFuture.map((book) => (
+                      <div
+                        key={book._id}
+                        className="bg-white rounded-xl shadow-lg overflow-hidden transform transition-all duration-300 ease hover:translate-y-[-4px] hover:shadow-xl"
+                      >
+                        <div className="relative">
+                          <img src={book.image} alt={book.title} className="w-full h-[260px] object-contain" />
                         </div>
-                        <div>
-                          <p className="text-gray-600 text-sm">Starts in</p>
-                          {/* 4. Replaced empty <p> with Countdown component */}
-                          <Countdown target={book.auctionStart} type="start" />
+                        <div className="px-4 py-2">
+                          <h3 className="text-lg font-semibold text-gray-900">{book.title}</h3>
+                          <p className="text-gray-600 text-sm">{book.author}</p>
+                          <div className="mt-2 flex items-center justify-between">
+                            <div>
+                              <p className="text-gray-600 text-sm">Starting Bid</p>
+                              <p className="text-lg font-bold text-purple-600">₹{book.basePrice}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-600 text-sm">Starts in</p>
+                              <Countdown target={book.auctionStart} type="start" />
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => (window.location.href = `/buyer/auction-item-detail/${book._id}`)}
+                            className="mt-4 mb-1 w-full bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+                          >
+                            View Details
+                          </button>
                         </div>
                       </div>
-                      <button
-                        onClick={() => (window.location.href = `/buyer/auction-item-detail/${book._id}`)}
-                        className="mt-4 mb-1 w-full bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
-                      >
-                        View Details
-                      </button>
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </>
+                  
+                  <Pagination
+                    currentPage={futurePage}
+                    totalPages={getTotalPages(auctions.futureAuctions)}
+                    onPageChange={(page) => handlePageChange('future', page)}
+                  />
+                </>
+              )}
+            </div>
           )}
 
           {/* Ended Auctions - No changes needed */}
           {auctions.endedAuctions.length > 0 && (
-            <>
+            <div id="ended-section">
               <h1 className="text-3xl font-bold text-gray-900 mt-12 mb-8">Past Auctions</h1>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {auctions.endedAuctions.map((book) => (
-                  <div
-                    key={book._id}
-                    className="bg-white rounded-xl shadow-lg overflow-hidden transform transition-all duration-300 ease hover:translate-y-[-4px] hover:shadow-xl"
-                  >
-                    <div className="relative">
-                      <img src={book.image} alt={book.title} className="w-full h-[260px] object-contain" />
-                    </div>
-                    <div className="px-4 py-2">
-                      <h3 className="text-lg font-semibold text-gray-900">{book.title}</h3>
-                      <p className="text-gray-600 text-sm">{book.author}</p>
-                      <div className="mt-2 flex items-center justify-between">
-                        <div>
-                          <p className="text-gray-600 text-sm">Final Price</p>
-                          <p className="text-lg font-bold text-purple-600">
-                            ₹{book.currentPrice || "Not sold"}
-                          </p>
+              
+              {sectionLoading.ended ? (
+                <div className="flex items-center justify-center py-20">
+                  <div className="text-center">
+                    <i className="fas fa-spinner fa-spin text-4xl text-purple-600 mb-4"></i>
+                    <p className="text-gray-600">Loading...</p>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    {paginatedEnded.map((book) => (
+                      <div
+                        key={book._id}
+                        className="bg-white rounded-xl shadow-lg overflow-hidden transform transition-all duration-300 ease hover:translate-y-[-4px] hover:shadow-xl"
+                      >
+                        <div className="relative">
+                          <img src={book.image} alt={book.title} className="w-full h-[260px] object-contain" />
                         </div>
-                        <div>
-                          <p className="text-gray-600 text-sm">Status</p>
-                          <p className="text-sm font-semibold">{book.currentPrice ? "Sold" : "Not sold"}</p>
+                        <div className="px-4 py-2">
+                          <h3 className="text-lg font-semibold text-gray-900">{book.title}</h3>
+                          <p className="text-gray-600 text-sm">{book.author}</p>
+                          <div className="mt-2 flex items-center justify-between">
+                            <div>
+                              <p className="text-gray-600 text-sm">Final Price</p>
+                              <p className="text-lg font-bold text-purple-600">
+                                ₹{book.currentPrice || "Not sold"}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-gray-600 text-sm">Status</p>
+                              <p className="text-sm font-semibold">{book.currentPrice ? "Sold" : "Not sold"}</p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => (window.location.href = `/buyer/auction-item-detail/${book._id}`)}
+                            className="mt-4 mb-1 w-full bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+                          >
+                            View Details
+                          </button>
                         </div>
                       </div>
-                      <button
-                        onClick={() => (window.location.href = `/buyer/auction-item-detail/${book._id}`)}
-                        className="mt-4 mb-1 w-full bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
-                      >
-                        View Details
-                      </button>
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </>
+                  
+                  <Pagination
+                    currentPage={endedPage}
+                    totalPages={getTotalPages(auctions.endedAuctions)}
+                    onPageChange={(page) => handlePageChange('ended', page)}
+                  />
+                </>
+              )}
+            </div>
           )}
 
           {/* No Auctions - No changes */}

@@ -6,7 +6,7 @@
   import { useDispatch } from 'react-redux';
   import { addToWishlistThunk, removeFromWishlistThunk } from '../../../store/slices/wishlistSlice';
   import { useWishlist } from '../../../store/hooks';
-  // Navbar and Footer are now provided by BuyerLayout
+  import Pagination from '../../../components/Pagination';
 
   const SearchPage = () => {
     const dispatch = useDispatch();
@@ -19,15 +19,16 @@
     const [currentCategory, setCurrentCategory] = useState("All Books");
     const [currentPriceFilter, setCurrentPriceFilter] = useState("all");
     const [currentSort, setCurrentSort] = useState("relevance");
+    
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageLoading, setPageLoading] = useState(false);
+    const ITEMS_PER_PAGE = 8;
 
-  // Removed navigate (unused)
     const [searchParams] = useSearchParams();
     const q = searchParams.get("q");
 
-    // Removed separate fetchBooks helper (inlined in effect)
 
     useEffect(() => {
-      // Inline fetch to avoid dependency lint warning and keep q dependency
       (async () => {
         try {
           setLoading(true);
@@ -76,6 +77,7 @@
         default: break;
       }
       setBooks(filtered);
+      setCurrentPage(1); // Reset to page 1 when filters change
     }, [allBooks, currentCategory, currentPriceFilter, currentSort]);
 
     const handleCategoryClick = (category) => setCurrentCategory(category);
@@ -86,6 +88,33 @@
       setCurrentPriceFilter("all");
       setCurrentSort("relevance");
     };
+
+    const handlePageChange = (newPage) => {
+      setPageLoading(true);
+      
+      setTimeout(() => {
+        setCurrentPage(newPage);
+        setPageLoading(false);
+        
+        // Scroll to top of results
+        const element = document.getElementById('filters-sorts');
+        if (element) {
+          const yOffset = -100;
+          const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+          window.scrollTo({ top: y, behavior: 'smooth' });
+        }
+      }, 300);
+    };
+
+    // Paginate books
+    const getPaginatedBooks = () => {
+      const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+      const endIndex = startIndex + ITEMS_PER_PAGE;
+      return books.slice(startIndex, endIndex);
+    };
+
+    const getTotalPages = () => Math.ceil(books.length / ITEMS_PER_PAGE);
+    const paginatedBooks = getPaginatedBooks();
 
     const handleWishlistAdd = (bookId) => {
       const isAlreadyInWishlist = wishlistItems.some(item => item._id === bookId);
@@ -104,20 +133,18 @@
         .catch((e) => toast.error(typeof e === 'string' ? e : 'Failed to add to wishlist'));
     };
 
-    // Removed unused handleLogout (not used in current UI)
-
     if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
     if (error) return <div className="min-h-screen flex items-center justify-center text-red-500">{error}</div>;
 
     return (
       <div className="flex flex-col min-h-screen bg-gray-50">
 
-        <div className="pt-16">
+        <div id="filters-sorts" className="pt-16">
           <div className="bg-white border-b border-gray-300">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="flex space-x-8 py-4">
                 {["All Books", "Fiction", "Non-Fiction", "Mystery", "Science Fiction", "Romance", "Thriller", "Other"].map(category => (
-                  <Link key={category} to="#" className={`${currentCategory === category ? "text-purple-600 border-b-2 border-purple-600 pb-4 -mb-4" : "text-gray-600 hover:text-purple-600"}`} onClick={(e)=>{e.preventDefault(); handleCategoryClick(category);}}>{category}</Link>
+                  <Link key={category} to="#" className={`${currentCategory === category ? "cursor-pointer text-purple-600 border-b-2 border-purple-600 pb-4 -mb-4" : "text-gray-600 hover:text-purple-600"}`} onClick={(e)=>{e.preventDefault(); handleCategoryClick(category);}}>{category}</Link>
                 ))}
               </div>
             </div>
@@ -131,7 +158,7 @@
               </div>
               <div className="flex flex-wrap items-center gap-3">
                 <div className="relative">
-                  <select value={currentSort} onChange={handleSortChange} className="appearance-none px-4 py-2.5 pr-10 rounded-lg border border-gray-300 bg-white text-gray-700 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition">
+                  <select value={currentSort} onChange={handleSortChange} className="appearance-none px-4 py-2.5 pr-10 rounded-lg border border-gray-300 bg-white text-gray-700 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition cursor-pointer">
                     <option value="relevance">Sort by: Relevance</option>
                     <option value="price-asc">Price: Low to High</option>
                     <option value="price-desc">Price: High to Low</option>
@@ -144,7 +171,7 @@
                   <i className="fas fa-chevron-down absolute right-3 top-[15px] text-gray-500 pointer-events-none text-xs"></i>
                 </div>
                 <div className="relative">
-                  <select value={currentPriceFilter} onChange={handlePriceRangeChange} className="appearance-none px-4 py-2.5 pr-10 rounded-lg border border-gray-300 bg-white text-gray-700 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition">
+                  <select value={currentPriceFilter} onChange={handlePriceRangeChange} className="appearance-none px-4 py-2.5 pr-10 rounded-lg border border-gray-300 bg-white text-gray-700 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition cursor-pointer">
                     <option value="all">All Prices</option>
                     <option value="under500">Under ₹500</option>
                     <option value="500-1000">₹500 - ₹1000</option>
@@ -160,18 +187,24 @@
               </div>
             </div>
 
-            <BookGrid books={books} onWishlistAdd={handleWishlistAdd}/>
+            <div id="search-results">
+              {pageLoading ? (
+                <div className="flex items-center justify-center py-20">
+                  <div className="text-center">
+                    <i className="fas fa-spinner fa-spin text-4xl text-purple-600 mb-4"></i>
+                    <p className="text-gray-600">Loading...</p>
+                  </div>
+                </div>
+              ) : (
+                <BookGrid books={paginatedBooks} onWishlistAdd={handleWishlistAdd}/>
+              )}
+            </div>
 
-            {/* Pagination (Commented out to match EJS) */}
-            {/* <div className="flex justify-center mt-8">
-              <nav className="flex space-x-2">
-                <button className="px-3 py-2 rounded-lg bg-purple-600 text-white">1</button>
-                <button className="px-3 py-2 rounded-lg text-gray-600 hover:bg-purple-50">2</button>
-                <button className="px-3 py-2 rounded-lg text-gray-600 hover:bg-purple-50">3</button>
-                <span className="px-3 py-2">...</span>
-                <button className="px-3 py-2 rounded-lg text-gray-600 hover:bg-purple-50">10</button>
-              </nav>
-            </div> */}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={getTotalPages()}
+              onPageChange={handlePageChange}
+            />
           </div>
         </div>
 
