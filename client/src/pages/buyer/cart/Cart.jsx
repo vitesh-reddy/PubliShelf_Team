@@ -2,10 +2,10 @@
 import React, { useMemo, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { removeFromWishlist as removeFromWishlistApi } from "../../../services/buyer.services.js";
+// Wishlist operations now handled via async thunks
 import { useDispatch } from 'react-redux';
 import { fetchCart, updateCartQuantityThunk, removeFromCartThunk, addToCartThunk } from '../../../store/slices/cartSlice';
-import { removeFromWishlist as removeFromWishlistInStore } from '../../../store/slices/wishlistSlice';
+import { removeFromWishlistThunk } from '../../../store/slices/wishlistSlice';
 import { useCart, useWishlist } from '../../../store/hooks';
 import Navbar from "../components/Navbar.jsx";
 import Footer from "../components/Footer.jsx";
@@ -24,7 +24,7 @@ import {
 const Cart = () => {
   const dispatch = useDispatch();
   const { items: cartItems, loading, error, isAdding, isUpdating, isRemoving } = useCart();
-  const { items: wishlistItems } = useWishlist();
+  const { items: wishlistItems, isRemoving: isWishlistRemoving } = useWishlist();
   const navigate = useNavigate();
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
   const [bookToRemove, setBookToRemove] = useState(null);
@@ -100,21 +100,11 @@ const Cart = () => {
       .catch((e) => toast.error(typeof e === 'string' ? e : 'Failed to add to cart'));
   };
 
-  const handleRemoveFromWishlist = async (bookId) => {
-    // Update store immediately (optimistic)
-    dispatch(removeFromWishlistInStore({ bookId }));
-    
-    // Sync with backend
-    try {
-      const response = await removeFromWishlistApi(bookId);
-      if (response.success) {
-        toast.success("Removed from wishlist");
-      } else {
-        toast.error(response.message || "Failed to remove from wishlist");
-      }
-    } catch {
-      toast.error("Error removing from wishlist");
-    }
+  const handleRemoveFromWishlist = (bookId) => {
+    dispatch(removeFromWishlistThunk(bookId))
+      .unwrap()
+      .then(() => toast.success('Removed from wishlist'))
+      .catch((e) => toast.error(typeof e === 'string' ? e : 'Failed to remove from wishlist'));
   };
 
   const hasOutOfStockItems = useMemo(() => {
@@ -339,11 +329,12 @@ const Cart = () => {
                           );
                         })()}
                         <button
-                          className="text-sm text-red-500 hover:text-red-600 remove-from-wishlist-btn"
+                          className={`text-sm remove-from-wishlist-btn ${isWishlistRemoving(item._id) ? 'text-gray-400 cursor-not-allowed' : 'text-red-500 hover:text-red-600'}`}
                           data-book-id={item._id}
+                          disabled={isWishlistRemoving(item._id)}
                           onClick={() => handleRemoveFromWishlist(item._id)}
                         >
-                          Remove
+                          {isWishlistRemoving(item._id) ? 'Removing...' : 'Remove'}
                         </button>
                       </div>
                     </div>

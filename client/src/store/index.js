@@ -32,11 +32,26 @@ const loadState = () => {
       cartState.updatingIds = Array.isArray(cartState.updatingIds) ? cartState.updatingIds : [];
       cartState.removingIds = Array.isArray(cartState.removingIds) ? cartState.removingIds : [];
     }
+    // Migrate wishlist shape similar to cart
+    let wishlistState = parsed.wishlist ?? undefined;
+    if (wishlistState && !('data' in wishlistState) && Array.isArray(wishlistState.items)) {
+      wishlistState = {
+        data: wishlistState.items,
+        loading: false,
+        error: null,
+        addingIds: [],
+        removingIds: [],
+      };
+    }
+    if (wishlistState && 'data' in wishlistState) {
+      wishlistState.addingIds = Array.isArray(wishlistState.addingIds) ? wishlistState.addingIds : [];
+      wishlistState.removingIds = Array.isArray(wishlistState.removingIds) ? wishlistState.removingIds : [];
+    }
     return {
       auth: parsed.auth ?? undefined,
       user: parsed.user ?? undefined,
       cart: cartState,
-      wishlist: parsed.wishlist ?? undefined,
+      wishlist: wishlistState,
     };
   } catch (e) {
     console.warn('Failed to load persisted state:', e);

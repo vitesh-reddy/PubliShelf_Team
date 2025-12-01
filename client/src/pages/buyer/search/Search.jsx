@@ -1,17 +1,17 @@
   import React, { useState, useEffect } from "react";
-  import { Link, useNavigate, useSearchParams } from "react-router-dom";
+  import { Link, useSearchParams } from "react-router-dom";
   import { toast } from "sonner";
-  import { searchBooks, addToWishlist, removeFromWishlist } from "../../../services/buyer.services.js";
+  import { searchBooks } from "../../../services/buyer.services.js";
   import BookGrid from "./components/BookGrid.jsx";
   import { useDispatch } from 'react-redux';
-  import { addToWishlist as addToWishlistInStore, removeFromWishlist as removeFromWishlistInStore } from '../../../store/slices/wishlistSlice';
+  import { addToWishlistThunk, removeFromWishlistThunk } from '../../../store/slices/wishlistSlice';
   import { useWishlist } from '../../../store/hooks';
   import Navbar from "../components/Navbar.jsx";
   import Footer from "../components/Footer.jsx";
 
   const SearchPage = () => {
     const dispatch = useDispatch();
-    const { items: wishlistItems } = useWishlist();
+  const { items: wishlistItems } = useWishlist();
     
     const [books, setBooks] = useState([]);
     const [allBooks, setAllBooks] = useState([]);
@@ -21,37 +21,35 @@
     const [currentPriceFilter, setCurrentPriceFilter] = useState("all");
     const [currentSort, setCurrentSort] = useState("relevance");
 
-    const navigate = useNavigate();
+  // Removed navigate (unused)
     const [searchParams] = useSearchParams();
     const q = searchParams.get("q");
 
-    const fetchBooks = async () => {
-      try {
-        setLoading(true);
-        setAllBooks([]);
-        setBooks([]);
-
-        const response = await searchBooks(q);
-
-        if (response.success) {
-          console.log("search resbooks", response.data.books);
-          const newBooks = response.data.books || [];
-          setAllBooks(newBooks);
-          setError("");
-        } else {
-          setAllBooks([]);
-          setError(response.message);
-        }
-      } catch (err) {
-        setAllBooks([]);
-        setError("Failed to fetch books");
-      } finally {
-        setLoading(false);
-      }
-    };
+    // Removed separate fetchBooks helper (inlined in effect)
 
     useEffect(() => {
-      fetchBooks();
+      // Inline fetch to avoid dependency lint warning and keep q dependency
+      (async () => {
+        try {
+          setLoading(true);
+          setAllBooks([]);
+          setBooks([]);
+          const response = await searchBooks(q);
+          if (response.success) {
+            const newBooks = response.data.books || [];
+            setAllBooks(newBooks);
+            setError("");
+          } else {
+            setAllBooks([]);
+            setError(response.message);
+          }
+        } catch {
+          setAllBooks([]);
+          setError("Failed to fetch books");
+        } finally {
+          setLoading(false);
+        }
+      })();
     }, [q]);
 
     useEffect(() => {
@@ -90,57 +88,24 @@
       setCurrentSort("relevance");
     };
 
-    const handleWishlistAdd = async (bookId, e) => {
-      const buttonEl = e?.currentTarget;
-      const iconEl = buttonEl?.querySelector('i');
+    const handleWishlistAdd = (bookId) => {
       const isAlreadyInWishlist = wishlistItems.some(item => item._id === bookId);
-
       if (isAlreadyInWishlist) {
-        // Optimistic remove
-        dispatch(removeFromWishlistInStore({ bookId }));
-        if (iconEl) {
-          iconEl.classList.remove('fas', 'text-red-500');
-          iconEl.classList.add('far', 'text-gray-600');
-        }
-        try {
-          const response = await removeFromWishlist(bookId);
-          if (response.success) {
-            toast.success('Removed from wishlist');
-          } else {
-            toast.error(response.message || 'Failed to remove from wishlist');
-          }
-        } catch {
-          toast.error('Error removing from wishlist');
-        }
+        dispatch(removeFromWishlistThunk(bookId))
+          .unwrap()
+          .then(() => toast.success('Removed from wishlist'))
+          .catch((e) => toast.error(typeof e === 'string' ? e : 'Failed to remove from wishlist'));
         return;
       }
-
-      // Find the book from the books array
       const bookToAdd = books.find(b => b._id === bookId);
       if (!bookToAdd) return;
-
-      // Optimistic add
-      dispatch(addToWishlistInStore(bookToAdd));
-      if (iconEl) {
-        iconEl.classList.remove('far', 'text-gray-600');
-        iconEl.classList.add('fas', 'text-red-500');
-      }
-      try {
-        const response = await addToWishlist(bookId);
-        if (response.success) {
-          toast.success('Added to wishlist');
-        } else {
-          toast.error(`Failed to add to wishlist: ${response.message}`);
-        }
-      } catch {
-        toast.error('Error adding to wishlist');
-      }
+      dispatch(addToWishlistThunk({ bookId, book: bookToAdd }))
+        .unwrap()
+        .then(() => toast.success('Added to wishlist'))
+        .catch((e) => toast.error(typeof e === 'string' ? e : 'Failed to add to wishlist'));
     };
 
-    const handleLogout = () => {
-      document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-      navigate("/auth/login");
-    };
+    // Removed unused handleLogout (not used in current UI)
 
     if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
     if (error) return <div className="min-h-screen flex items-center justify-center text-red-500">{error}</div>;

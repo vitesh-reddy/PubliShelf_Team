@@ -40,10 +40,22 @@ export const useCart = () => {
 };
 
 export const useWishlist = () => {
-  const items = useSelector((state) => state.wishlist.items);
+  const slice = useSelector((state) => state.wishlist) || {};
+  const {
+    data = [],
+    loading = false,
+    error = null,
+    addingIds = [],
+    removingIds = [],
+  } = slice;
+  const items = Array.isArray(data) ? data : [];
   return {
     items,
+    loading,
+    error,
     count: items.length,
     isEmpty: items.length === 0,
+    isAdding: (bookId) => addingIds.includes(bookId),
+    isRemoving: (bookId) => removingIds.includes(bookId),
   };
 };
