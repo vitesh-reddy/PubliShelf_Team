@@ -7,16 +7,8 @@ import { clearCart } from "../../../store/slices/cartSlice";
 import { clearWishlist } from "../../../store/slices/wishlistSlice";
 import { useUser, useCart, useWishlist } from "../../../store/hooks";
 import { logout } from "../../../services/auth.services";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "../../../components/ui/AlertDialog";
+import SearchAutocomplete from "./SearchAutocomplete";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../../../components/ui/AlertDialog";
 
 const Navbar = () => {
   const dispatch = useDispatch();
@@ -27,7 +19,7 @@ const Navbar = () => {
   const user = useUser();
   const { items: cartItems } = useCart();
   const { items: wishlistItems } = useWishlist();
-  const [query, setQuery] = useState(q || "");
+  
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
@@ -56,10 +48,7 @@ const Navbar = () => {
     navigate("/auth/login");
   };
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (query) navigate(`/buyer/search?q=${encodeURIComponent(query)}`);
-  };
+  
 
   const showSearchBar = !["/buyer/checkout", "/buyer/profile"].includes(location.pathname);
 
@@ -70,9 +59,7 @@ const Navbar = () => {
 
   useEffect(() => {
     const closeOnEscape = (e) => e.key === "Escape" && (setIsMobileMenuOpen(false), setIsSearchOpen(false));
-    const closeOnClick = (e) => {
-      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target));
-    };
+    const closeOnClick = (e) => {};
     document.addEventListener("keydown", closeOnEscape);
     document.addEventListener("mousedown", closeOnClick);
     return () => {
@@ -80,6 +67,7 @@ const Navbar = () => {
       document.removeEventListener("mousedown", closeOnClick);
     };
   }, []);
+
 
   return (
     <nav className="font-sans fixed w-full bg-white/80 backdrop-blur-md shadow-sm z-50">
@@ -154,21 +142,9 @@ const Navbar = () => {
             </div>
 
             {/* Desktop Search */}
-            <div className={`relative hidden md:block ${showSearchBar ? "opacity-100" : "opacity-0 max-w-[125px]"}`}>
-              <form onSubmit={handleSearch}>
-                <input
-                  type="text"
-                  name="q"
-                  value={query}
-                  placeholder="Search books..."
-                  onChange={(e) => setQuery(e.target.value)}
-                  className="w-[35vw] lg:w-[24vw] xl:w-[20vw] px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-600 outline-none"
-                />
-                <button type="submit" className="absolute right-3 top-[9px] text-gray-400">
-                  <i className="fas fa-search"></i>
-                </button>
-              </form>
-            </div>            
+            <div className={`hidden md:block ${showSearchBar ? "opacity-100" : "opacity-0 max-w-[125px]"}`}>
+              <SearchAutocomplete variant="desktop" initialQuery={q || ""} />
+            </div>
 
             {/* Wishlist & Cart (Desktop) */}
             <Link to="/buyer/cart/#wishlist-section" className="relative hidden md:flex text-gray-700 hover:text-purple-600">
@@ -252,32 +228,15 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* Mobile Search Dropdown (below navbar) */}
-      <div
-        className={`md:hidden px-4 overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-          isSearchOpen ? "max-h-24 opacity-100 mt-2" : "max-h-0 opacity-0"
-        }`}
-      >
-        <form
-          onSubmit={handleSearch}
-          className="relative bg-gradient-to-r from-purple-100 to-indigo-100 rounded-xl p-[2px] shadow-inner"
-        >
-          <div className="bg-white rounded-lg flex items-center px-3">
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search books..."
-              className="w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600 text-gray-700"
-            />
-            <button
-              type="submit"
-              className="ml-2 text-purple-500 hover:text-purple-700 transition-transform duration-300 hover:scale-110"
-            >
-              <i className="fa-solid fa-arrow-right"></i>
-            </button>
-          </div>
-        </form>
-      </div>
+      {/* Mobile Search (input + suggestions) */}
+      {isSearchOpen && showSearchBar && (
+        <SearchAutocomplete
+          variant="mobile"
+          isOpen={isSearchOpen}
+          onClose={() => setIsSearchOpen(false)}
+          initialQuery={q || ""}
+        />
+      )}
 
       {/* Mobile Menu Dropdown (slide-down) */}
       <div
