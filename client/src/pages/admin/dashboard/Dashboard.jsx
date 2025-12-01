@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import AdminNavbar from '../components/AdminNavbar';
 import { getPlatformAnalytics } from '../../../services/admin.services';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend, Filler } from 'chart.js';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
@@ -36,13 +35,10 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <AdminNavbar adminName={user?.name} isSuperAdmin={user?.isSuperAdmin} />
-        <div className="pt-20 flex items-center justify-center">
-          <div className="text-center">
-            <i className="fas fa-spinner fa-spin text-4xl text-purple-600 mb-4"></i>
-            <p className="text-gray-600">Loading analytics...</p>
-          </div>
+      <div className="flex items-center justify-center">
+        <div className="text-center py-12">
+          <i className="fas fa-spinner fa-spin text-4xl text-purple-600 mb-4"></i>
+          <p className="text-gray-600">Loading analytics...</p>
         </div>
       </div>
     );
@@ -50,16 +46,13 @@ const Dashboard = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <AdminNavbar adminName={user?.name} isSuperAdmin={user?.isSuperAdmin} />
-        <div className="pt-20 flex items-center justify-center">
-          <div className="text-center">
-            <i className="fas fa-exclamation-circle text-4xl text-purple-600 mb-4"></i>
-            <p className="text-gray-600">{error}</p>
-            <button onClick={fetchAnalytics} className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg">
-              Retry
-            </button>
-          </div>
+      <div className="flex items-center justify-center">
+        <div className="text-center py-12">
+          <i className="fas fa-exclamation-circle text-4xl text-purple-600 mb-4"></i>
+          <p className="text-gray-600">{error}</p>
+          <button onClick={fetchAnalytics} className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg">
+            Retry
+          </button>
         </div>
       </div>
     );
@@ -123,11 +116,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AdminNavbar adminName={user?.name} isSuperAdmin={user?.isSuperAdmin} />
-      
-      <div className="pt-16 pb-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
@@ -731,8 +720,6 @@ const Dashboard = () => {
               </div>
             </div>
           )}
-        </div>
-      </div>
     </div>
   );
 };

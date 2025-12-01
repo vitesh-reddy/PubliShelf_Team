@@ -38,6 +38,7 @@ import ManagersLayout from '../pages/admin/managers/ManagersLayout';
 import Managers from '../pages/admin/managers/Managers';
 import ManagerOverview from '../pages/admin/managers/ManagerOverview';
 import Settings from '../pages/admin/settings/Settings';
+import AdminLayout from '../pages/admin/components/AdminLayout';
 
 const ProtectedRoutes = () => (
   <>
@@ -94,15 +95,17 @@ const ProtectedRoutes = () => (
 
     {/* Admin Routes */}
     <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
-      <Route path="/admin/dashboard" element={<AdminDashboard />} />
-      <Route path="/admin/managers" element={<ManagersLayout />}>
-        <Route index element={<Navigate to="/admin/managers/pending" replace />} />
-        <Route path="pending" element={<Managers type="pending" />} />
-        <Route path="active" element={<Managers type="active" />} />
-        <Route path="banned" element={<Managers type="banned" />} />
+      <Route path="/admin" element={<AdminLayout />}>
+        <Route path="dashboard" element={<AdminDashboard />} />
+        <Route path="managers" element={<ManagersLayout />}>
+          <Route index element={<Navigate to="/admin/managers/pending" replace />} />
+          <Route path="pending" element={<Managers type="pending" />} />
+          <Route path="active" element={<Managers type="active" />} />
+          <Route path="banned" element={<Managers type="banned" />} />
+        </Route>
+        <Route path="managers/:id" element={<ManagerOverview />} />
+        <Route path="settings" element={<Settings />} />
       </Route>
-      <Route path="/admin/managers/:id" element={<ManagerOverview />} />
-      <Route path="/admin/settings" element={<Settings />} />
     </Route>
   </>
 );

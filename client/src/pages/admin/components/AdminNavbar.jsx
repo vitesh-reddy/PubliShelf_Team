@@ -61,7 +61,7 @@ const AdminNavbar = ({ adminName, isSuperAdmin }) => {
             </Link>
           </div>
 
-          <div className="hidden md:flex items-center space-x-2">
+          <div className="hidden md:flex items-center space-x-2 mr-8">
             {navLinks.map((link) => (
               <Link
                 key={link.path}

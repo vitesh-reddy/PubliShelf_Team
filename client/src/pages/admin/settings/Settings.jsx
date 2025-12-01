@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useSearchParams } from 'react-router-dom';
-import AdminNavbar from '../components/AdminNavbar';
 import { toast } from 'sonner';
 import {
   getAllAdmins,
@@ -158,10 +157,7 @@ const Settings = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AdminNavbar adminName={user?.name} isSuperAdmin={user?.isSuperAdmin} />
-      
-      <div className="pt-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+    <div className="px-4 sm:px-6 lg:px-8 py-8 max-w-7xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
           <p className="text-gray-600 mt-2">Manage your admin account and preferences</p>
@@ -320,8 +316,7 @@ const Settings = () => {
             )}
           </div>
         </div>
-      </div>
-
+      
       <AlertDialog open={showChangeKeyDialog} onOpenChange={setShowChangeKeyDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>

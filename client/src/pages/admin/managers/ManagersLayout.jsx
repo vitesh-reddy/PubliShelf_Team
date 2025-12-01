@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import AdminNavbar from '../components/AdminNavbar';
 
 const ManagersLayout = () => {
   const location = useLocation();
@@ -15,10 +14,7 @@ const ManagersLayout = () => {
   ];
 
   return (
-    <div className="bg-gray-50 min-h-screen">
-      <AdminNavbar adminName={adminName} isSuperAdmin={user?.isSuperAdmin} />
-      <div className="pt-16 pb-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Manager Management</h1>
             <p className="text-gray-600">Manage manager accounts and permissions</p>
@@ -46,8 +42,6 @@ const ManagersLayout = () => {
           <div className="bg-white rounded-b-xl rounded-tr-xl shadow-sm border border-gray-200 p-6">
             <Outlet />
           </div>
-        </div>
-      </div>
     </div>
   );
 };
