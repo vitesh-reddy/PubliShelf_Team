@@ -7,8 +7,7 @@ import { useDispatch } from 'react-redux';
 import { updateCartQuantity as updateCartInStore, removeFromCart as removeFromCartInStore, addToCart as addToCartInStore, setCart } from '../../../store/slices/cartSlice';
 import { removeFromWishlist as removeFromWishlistInStore } from '../../../store/slices/wishlistSlice';
 import { useCart, useWishlist } from '../../../store/hooks';
-import Navbar from "../components/Navbar.jsx";
-import Footer from "../components/Footer.jsx";
+// Navbar and Footer are provided by BuyerLayout
 import StarRating from "../components/StarRating.jsx";
 import {
   AlertDialog,
@@ -170,7 +169,6 @@ const Cart = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
-      <Navbar />
 
       <div className="pt-16">
         <div className="max-w-7xl px-4 py-8 mx-auto sm:px-6 lg:px-8">
@@ -477,7 +475,6 @@ const Cart = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      <Footer />
     </div>
   );
 };

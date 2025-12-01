@@ -8,8 +8,7 @@ import { useDispatch } from 'react-redux';
 import { addToCart as addToCartInStore } from '../../../store/slices/cartSlice';
 import { addToWishlist as addToWishlistInStore, removeFromWishlist as removeFromWishlistInStore } from '../../../store/slices/wishlistSlice';
 import { useCart, useWishlist } from '../../../store/hooks';
-import Navbar from "../components/Navbar.jsx";
-import Footer from "../components/Footer.jsx";
+// Navbar and Footer are provided by BuyerLayout
 import StarRating from "../components/StarRating.jsx";
 
 const ProductDetail = () => {
@@ -117,7 +116,6 @@ const ProductDetail = () => {
 
   return (
     <div className="flex flex-col min-h-screen product-detail-page bg-gray-50">
-      <Navbar />
 
       <div className="pt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -343,7 +341,6 @@ const ProductDetail = () => {
         </div>
       </div>
 
-      <Footer />
     </div>
   );
 };

@@ -6,8 +6,7 @@
   import { useDispatch } from 'react-redux';
   import { addToWishlist as addToWishlistInStore, removeFromWishlist as removeFromWishlistInStore } from '../../../store/slices/wishlistSlice';
   import { useWishlist } from '../../../store/hooks';
-  import Navbar from "../components/Navbar.jsx";
-  import Footer from "../components/Footer.jsx";
+  // Navbar and Footer are now provided by BuyerLayout
 
   const SearchPage = () => {
     const dispatch = useDispatch();
@@ -147,7 +146,6 @@
 
     return (
       <div className="flex flex-col min-h-screen bg-gray-50">
-        <Navbar />
 
         <div className="pt-16">
           <div className="bg-white border-b border-gray-300">
@@ -212,7 +210,6 @@
           </div>
         </div>
 
-        <Footer />
       </div>
     );
   };

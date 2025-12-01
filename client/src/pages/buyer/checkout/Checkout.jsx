@@ -9,8 +9,7 @@ import {
   updateBuyerAddress,
   deleteBuyerAddress,
 } from "../../../services/buyer.services.js";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
+// Navbar and Footer are provided by BuyerLayout
 import { useCart } from "../../../store/hooks";
 import { clearCart } from "../../../store/slices/cartSlice.js";
 import { useDispatch } from "react-redux";
@@ -338,7 +337,6 @@ const Checkout = () => {
   if (cartItems.length === 0) {
     return (
       <div className="flex flex-col min-h-screen checkout-page">
-        <Navbar />
         <div className="flex-1 flex items-center justify-center bg-gradient-to-b from-[#f3e8ff] to-white pt-20">
           <div className="text-center">
             <i className="fas fa-shopping-cart text-6xl text-gray-300 mb-4"></i>
@@ -352,7 +350,6 @@ const Checkout = () => {
             </button>
           </div>
         </div>
-        <Footer />
       </div>
     );
   }
@@ -360,7 +357,6 @@ const Checkout = () => {
   // ----------------- JSX RETURN (keeps all classNames & layout) -----------------
   return (
     <div className="flex flex-col min-h-screen checkout-page">
-      <Navbar />
 
       <div className="bg-gradient-to-b from-[#f3e8ff] to-white pt-20">
         <div className="max-w-[800px] mx-auto p-5 md:p-5">
@@ -757,7 +753,6 @@ const Checkout = () => {
         </div>
       )}
 
-      <Footer />
     </div>
   );
 };

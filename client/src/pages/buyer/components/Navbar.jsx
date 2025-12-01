@@ -34,8 +34,7 @@ const Navbar = () => {
 
   const profileMenuRef = useRef(null);
   const buyerName = user.firstname || "Buyer";
-  const buyerFullName = (user.firstname + user.lastname) || null;
-
+  
   const isOnAuctionPage = location.pathname.includes("/auction");
   const buttonDestination = isOnAuctionPage ? "/buyer/dashboard" : "/buyer/auction-page";
 

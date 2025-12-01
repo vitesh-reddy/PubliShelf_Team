@@ -8,8 +8,7 @@ import AuctionCountdownCard from "./components/AuctionCountdownCard.jsx";
 import AuctionActivityFeed from "./components/AuctionActivityFeed.jsx";
 import ShelfViewToggle from "./components/ShelfViewToggle.jsx";
 import ShelfView from "./components/ShelfView.jsx";
-import Navbar from "../components/Navbar.jsx";
-import Footer from "../components/Footer.jsx";
+// Navbar and Footer are provided by BuyerLayout
 // Font Awesome icons imported via CDN in index.html
 
 const Dashboard = () => {
@@ -51,7 +50,6 @@ const Dashboard = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
-      <Navbar />
 
       {/* Hero Carousel Section */}
       <section className="pt-20 pb-8 bg-gradient-to-b from-purple-50 to-gray-50">
@@ -178,7 +176,6 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <Footer />
     </div>
   );
 };

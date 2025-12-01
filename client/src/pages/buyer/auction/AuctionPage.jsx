@@ -3,8 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { getAuctionPage } from "../../../services/antiqueBook.services.js";
 import { useUser } from '../../../store/hooks';
-import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
+// Navbar and Footer are provided by BuyerLayout
 
 // 1. A new, reusable Countdown component using React hooks
 const Countdown = ({ target, type }) => {
@@ -82,7 +81,6 @@ const AuctionPage = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
-      <Navbar />
       
       <div className="pt-16 pb-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -242,7 +240,6 @@ const AuctionPage = () => {
       </div>
 
 
-      <Footer />
     </div>
   );
 };

@@ -11,8 +11,7 @@ import { clearCart } from '../../../store/slices/cartSlice';
 import { clearWishlist } from '../../../store/slices/wishlistSlice';
 import { useUser, useWishlist } from '../../../store/hooks';
 import { logout } from "../../../services/auth.services";
-import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
+// Navbar and Footer are now provided by BuyerLayout
 import { useForm } from "react-hook-form";
 import {
   AlertDialog,
@@ -181,7 +180,6 @@ const BuyerProfile = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 text-[#333] leading-[1.6] overflow-x-hidden">
-      <Navbar />
       
       <div className="max-w-7xl mt-20 mb-[20px] mx-auto px-4 sm:px-6 lg:px-8 py-4 w-full">
         {/* Header Section */}
@@ -709,7 +707,7 @@ const BuyerProfile = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      <Footer />
+      
     </div>
   );
 };
