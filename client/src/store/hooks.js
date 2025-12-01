@@ -4,7 +4,6 @@ import { useDispatch, useSelector } from 'react-redux';
 export const useAppDispatch = () => useDispatch();
 export const useAppSelector = useSelector;
 
-// Custom hooks for easy access
 export const useAuth = () => {
   return useSelector((state) => state.auth);
 };
