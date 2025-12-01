@@ -13,10 +13,29 @@ const loadState = () => {
     if (!serializedState) return undefined; // Let reducers use their initial state
     const parsed = JSON.parse(serializedState);
     // Only hydrate known slices to avoid accidental shape drift
+    // Migrate cart slice shape if needed
+    let cartState = parsed.cart ?? undefined;
+    // Migrate legacy { items: [] } shape to new extended shape
+    if (cartState && !('data' in cartState) && Array.isArray(cartState.items)) {
+      cartState = {
+        data: cartState.items,
+        loading: false,
+        error: null,
+        addingIds: [],
+        updatingIds: [],
+        removingIds: [],
+      };
+    }
+    // Ensure new keys exist if an older persisted state missed them
+    if (cartState && 'data' in cartState) {
+      cartState.addingIds = Array.isArray(cartState.addingIds) ? cartState.addingIds : [];
+      cartState.updatingIds = Array.isArray(cartState.updatingIds) ? cartState.updatingIds : [];
+      cartState.removingIds = Array.isArray(cartState.removingIds) ? cartState.removingIds : [];
+    }
     return {
       auth: parsed.auth ?? undefined,
       user: parsed.user ?? undefined,
-      cart: parsed.cart ?? undefined,
+      cart: cartState,
       wishlist: parsed.wishlist ?? undefined,
     };
   } catch (e) {
