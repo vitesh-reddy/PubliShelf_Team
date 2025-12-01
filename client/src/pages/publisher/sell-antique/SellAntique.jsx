@@ -216,13 +216,6 @@ const SellAntique = () => {
   // ----------------------------
   return (
     <div className="bg-gray-50">
-      <Link to="/publisher/dashboard" className="flex items-center mb-2 py-4 px-6 shadow-sm bg-white">
-        <i className="fas fa-arrow-left text-gray-600 mr-4"></i>
-        <span className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 text-transparent bg-clip-text">
-          PubliShelf
-        </span>
-      </Link>
-
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="rounded-xl bg-white shadow-md overflow-hidden">
 

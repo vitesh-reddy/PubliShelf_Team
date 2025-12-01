@@ -5,16 +5,7 @@ import { useDispatch } from 'react-redux';
 import { logout } from '../../../services/auth.services';
 import { clearAuth } from '../../../store/slices/authSlice';
 import { clearUser } from '../../../store/slices/userSlice';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '../../../components/ui/AlertDialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../../../components/ui/AlertDialog';
 
 const PublisherNavbar = ({ publisherName }) => {
   const location = useLocation();
@@ -54,7 +45,7 @@ const PublisherNavbar = ({ publisherName }) => {
         <div className="flex justify-between h-16">
           {/* Logo */}
           <div className="flex items-center">
-            <Link to="/publisher/profile" className="flex items-center">
+            <Link to="/publisher/dashboard" className="flex items-center">
               <span className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 text-transparent bg-clip-text">
                 PubliShelf
               </span>
@@ -87,7 +78,7 @@ const PublisherNavbar = ({ publisherName }) => {
               </button>
               <div className="absolute hidden group-hover:block top-[90%] -right-6 w-48 bg-white shadow-lg rounded-lg py-2 mt-1 transition-all duration-200">
                 <Link 
-                  to="/publisher/profile" 
+                  to="/publisher/dashboard" 
                   className="block px-4 py-2 text-gray-700 hover:bg-purple-50 hover:text-purple-600"
                 >
                   <i className="fas fa-user mr-2"></i>

@@ -3,7 +3,6 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { getDashboard, softDeleteBook } from "../../../services/publisher.services";
-import PublisherNavbar from "../components/PublisherNavbar";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -80,8 +79,7 @@ const ActiveBooks = () => {
   if (loading) {
     return (
       <div className="bg-gray-50 min-h-screen">
-        <PublisherNavbar publisherName={`${user.firstname} ${user.lastname}`} />
-        <div className="pt-16 flex items-center justify-center h-screen">
+        <div className="flex items-center justify-center h-screen">
           <div className="text-center">
             <i className="fas fa-spinner fa-spin text-4xl text-purple-600 mb-4"></i>
             <p className="text-gray-600">Loading books...</p>
@@ -93,9 +91,7 @@ const ActiveBooks = () => {
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      <PublisherNavbar publisherName={`${user.firstname} ${user.lastname}`} />
-
-      <div className="pt-16 pb-20">
+      <div className="pb-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">

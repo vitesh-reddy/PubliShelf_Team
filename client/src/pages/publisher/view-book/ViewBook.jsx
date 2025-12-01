@@ -3,32 +3,17 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { getBook, softDeleteBook, restoreBook } from "../../../services/publisher.services.js";
-import { logout } from "../../../services/auth.services.js";
-import { clearAuth } from "../../../store/slices/authSlice";
-import { useDispatch } from "react-redux";
-import { clearUser } from "../../../store/slices/userSlice";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "../../../components/ui/AlertDialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../../../components/ui/AlertDialog";
 
 const PublisherViewBook = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const dispatch = useDispatch();
   const [book, setBook] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showRestoreDialog, setShowRestoreDialog] = useState(false);
-  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
   useEffect(() => {
     fetchBook();
@@ -91,21 +76,6 @@ const PublisherViewBook = () => {
     }
   };
 
-  const handleLogout = () => {
-    setShowLogoutDialog(true);
-  };
-
-  const confirmLogout = async () => {
-    try {
-      await logout();
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
-    dispatch(clearAuth());
-    dispatch(clearUser());
-    setShowLogoutDialog(false);
-    navigate("/auth/login");
-  };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   if (error) return <div className="min-h-screen flex items-center justify-center text-red-500">{error}</div>;
@@ -113,37 +83,7 @@ const PublisherViewBook = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navbar */}
-      <nav className="fixed w-full bg-white shadow-sm z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <Link to="/publisher/dashboard" className="flex items-center">
-                <span className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 text-transparent bg-clip-text">
-                  PubliShelf
-                </span>
-              </Link>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Link
-                to="/publisher/dashboard"
-                className="text-gray-700 hover:text-purple-600 transition-colors"
-              >
-                <i className="fas fa-arrow-left mr-2"></i>
-                Back to Dashboard
-              </Link>
-              <button
-                onClick={handleLogout}
-                className="bg-gradient-to-r hover:bg-gradient-to-l from-purple-600 to-indigo-600 text-white px-4 py-2 rounded-lg transition-all duration-300"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      <div className="pt-24 pb-12">
+      <div className="pb-12 pt-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Breadcrumb */}
           <nav className="flex mb-8" aria-label="Breadcrumb">
@@ -154,9 +94,15 @@ const PublisherViewBook = () => {
                   Dashboard
                 </Link>
               </li>
+              <li className="inline-flex items-center">
+                <Link to="/publisher/active-books" className="text-gray-700 hover:text-purple-600">
+                  <i className="fas fa-chevron-right text-gray-400 mr-2"></i>
+                  Active Books
+                </Link>
+              </li>
               <li>
                 <div className="flex items-center">
-                  <i className="fas fa-chevron-right text-gray-400 mx-2"></i>
+                  <i className="fas fa-chevron-right text-gray-400 mr-2"></i>
                   <span className="text-gray-500">{book.title}</span>
                 </div>
               </li>
@@ -380,23 +326,6 @@ const PublisherViewBook = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Logout Confirmation Dialog */}
-      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Logout</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to logout? You will need to login again to access your account.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmLogout} className="bg-red-600 hover:bg-red-700">
-              Logout
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };
