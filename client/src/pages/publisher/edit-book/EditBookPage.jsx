@@ -2,65 +2,49 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams, Link, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import { getBook, updateBook } from "../../../services/publisher.services";
+import { useForm } from "react-hook-form";
 
-const genreOptions = [ "Fiction", "Non-Fiction", "Mystery", "Science Fiction", "Romance", "Thriller", "Other"];
+const genreOptions = ["Fiction", "Non-Fiction", "Mystery", "Science Fiction", "Romance", "Thriller", "Other"];
 
 const EditBookPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [book, setBook] = useState(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
-  const [form, setForm] = useState({
-    title: "",
-    author: "",
-    genre: "",
-    price: "",
-    description: "",
-    quantity: 0,
-  });
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState("");
 
-  const location = useLocation();
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors }
+  } = useForm({ mode: "onBlur" });
 
   useEffect(() => {
     const init = async () => {
       try {
         setLoading(true);
         const stateBook = location?.state?.book;
-        if (stateBook) {
-          setBook(stateBook);
-          setForm({
-            title: stateBook.title || "",
-            author: stateBook.author || "",
-            genre: stateBook.genre || "",
-            price: stateBook.price || stateBook.basePrice || "",
-            description: stateBook.description || "",
-            quantity: stateBook.quantity ?? 0,
-          });
-          setImagePreview(stateBook.image || "");
-          return;
-        }
-        const res = await getBook(id);
-        if (res && res.success) {
-          setBook(res.data);
-          setForm({
-            title: res.data.title || "",
-            author: res.data.author || "",
-            genre: res.data.genre || "",
-            price: res.data.price || res.data.basePrice || "",
-            description: res.data.description || "",
-            quantity: res.data.quantity ?? 0,
-          });
-          setImagePreview(res.data.image || "");
-        } else {
-          toast.error(res.message || "Failed to fetch book");
-          navigate("/publisher/dashboard");
-        }
-      } catch (err) {
-        console.error(err);
+
+        const data = stateBook || (await getBook(id))?.data;
+        if (!data) throw new Error();
+
+        setBook(data);
+        reset({
+          title: data.title || "",
+          author: data.author || "",
+          genre: data.genre || "",
+          price: data.price || data.basePrice || "",
+          description: data.description || "",
+          quantity: data.quantity ?? 0,
+        });
+        setImagePreview(data.image || "");
+
+      } catch {
         toast.error("Failed to fetch book");
         navigate("/publisher/dashboard");
       } finally {
@@ -68,54 +52,46 @@ const EditBookPage = () => {
       }
     };
     init();
-  }, [id, location, navigate]);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((s) => ({ ...s, [name]: value }));
-  };
+  }, [id, location, navigate, reset]);
 
   const handleFileChange = (file) => {
-    if (file) {
-      setImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
-    }
+    if (!file) return;
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
   };
 
-  // Drag and drop handlers
   const onDrop = useCallback((e) => {
     e.preventDefault();
-    e.stopPropagation();
-    const file = e.dataTransfer?.files && e.dataTransfer.files[0];
+    const file = e.dataTransfer?.files?.[0];
     if (file) handleFileChange(file);
   }, []);
 
   const onDragOver = useCallback((e) => {
     e.preventDefault();
-    e.stopPropagation();
   }, []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const onSubmit = async (data) => {
     try {
       setActionLoading(true);
+
       const payload = new FormData();
-      payload.append("title", form.title);
-      payload.append("author", form.author);
-      payload.append("genre", form.genre);
-      payload.append("price", form.price);
-      payload.append("description", form.description);
-      payload.append("quantity", form.quantity);
+      payload.append("title", data.title.trim());
+      payload.append("author", data.author.trim());
+      payload.append("genre", data.genre);
+      payload.append("price", Number(data.price));
+      payload.append("description", data.description.trim());
+      payload.append("quantity", Number(data.quantity));
       if (imageFile) payload.append("imageFile", imageFile);
+
       const res = await updateBook(id, payload);
-      if (res && res.success) {
+
+      if (res?.success) {
         toast.success("Book updated successfully!");
         navigate("/publisher/dashboard");
       } else {
         toast.error(res.message || "Failed to update book");
       }
-    } catch (err) {
-      console.error(err);
+    } catch {
       toast.error("Update failed");
     } finally {
       setActionLoading(false);
@@ -123,14 +99,10 @@ const EditBookPage = () => {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        Loading...
-      </div>
-    );
+    return <div className="min-h-screen flex items-center justify-center bg-gray-50">Loading...</div>;
   }
 
-  const inputClasses =
+  const baseInput =
     "mt-1 px-2 py-2 block w-full shadow-sm hover:shadow-md focus:ring-2 focus:ring-purple-500 focus:outline-none rounded-lg border-gray-300";
 
   return (
@@ -141,191 +113,171 @@ const EditBookPage = () => {
           PubliShelf
         </span>
       </Link>
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+      <div className="max-w-3xl mx-auto px-4 py-8">
         <div className="rounded-xl bg-white shadow-md overflow-hidden">
-          <div className="p-6 border-b border-gray-200">
-            <h1 className="text-2xl font-bold text-gray-900">Edit Book</h1>
+          <div className="p-6 border-b">
+            <h1 className="text-2xl font-bold">Edit Book</h1>
             <p className="text-gray-500 mt-1">Update the details of your book</p>
           </div>
 
-          <form
-            id="editBookForm"
-            className="p-6 space-y-6 animate-fade-in"
-            onSubmit={handleSubmit}
-          >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <form className="p-6 space-y-6" onSubmit={handleSubmit(onSubmit)}>
+            <div className="grid md:grid-cols-2 gap-6">
               <div>
-                <label htmlFor="bookTitle" className="block text-sm font-medium text-gray-700">
-                  Book Title
-                </label>
+                <label>Book Title</label>
                 <input
-                  type="text"
-                  name="title"
-                  id="bookTitle"
-                  value={form.title}
-                  onChange={handleChange}
-                  required
-                  className={inputClasses}
+                  {...register("title", {
+                    required: "Title is required",
+                    minLength: { value: 3, message: "Minimum 3 characters" },
+                    // Allow letters, spaces, and common punctuation
+                    pattern: { value: /^[A-Za-z\s.,:;!?'"()&/-]+$/, message: "Letters, spaces, and punctuation only" }
+                  })}
+                  className={`${baseInput} ${errors.title ? "border-red-500" : ""}`}
                 />
+                <p className="text-red-500 text-xs">{errors.title?.message}</p>
               </div>
 
               <div>
-                <label htmlFor="author" className="block text-sm font-medium text-gray-700">
-                  Author
-                </label>
+                <label>Author</label>
                 <input
-                  type="text"
-                  name="author"
-                  id="author"
-                  value={form.author}
-                  onChange={handleChange}
-                  required
-                  className={inputClasses}
+                  {...register("author", {
+                    required: "Author is required",
+                    minLength: { value: 3, message: "Minimum 3 characters" },
+                    pattern: { value: /^[A-Za-z\s]+$/, message: "Only alphabets allowed" },
+                    validate: {
+                      noEdgeSpaces: (v) => v.trim() === v || "No leading or trailing spaces",
+                    }
+                  })}
+                  className={`${baseInput} ${errors.author ? "border-red-500" : ""}`}
                 />
+                <p className="text-red-500 text-xs">{errors.author?.message}</p>
               </div>
             </div>
 
             <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                Description
-              </label>
+              <label>Description</label>
               <textarea
                 rows="4"
-                name="description"
-                id="description"
-                value={form.description}
-                onChange={handleChange}
-                required
-                className={inputClasses}
+                {...register("description", {
+                  required: "Description is required",
+                  minLength: { value: 10, message: "Minimum 10 characters" }
+                })}
+                className={`${baseInput} ${errors.description ? "border-red-500" : ""}`}
               />
+              <p className="text-red-500 text-xs">{errors.description?.message}</p>
             </div>
 
-            {/* Genre, Price, Quantity on same line */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-3 gap-6">
               <div>
-                <label htmlFor="genre" className="block text-sm font-medium text-gray-700">
-                  Genre
-                </label>
+                <label>Genre</label>
                 <select
-                  name="genre"
-                  id="genre"
-                  value={form.genre}
-                  onChange={handleChange}
-                  required
-                  className={`bg-white ${inputClasses}`}
+                  {...register("genre", { required: "Genre is required" })}
+                  className={`${baseInput} ${errors.genre ? "border-red-500" : ""}`}
                 >
-                  <option value="" hidden disabled>Select Genre</option>
+                  <option value="" hidden>Select</option>
                   {genreOptions.map(opt => (
                     <option key={opt} value={opt}>{opt}</option>
                   ))}
                 </select>
+                <p className="text-red-500 text-xs">{errors.genre?.message}</p>
               </div>
+
               <div>
-                <label htmlFor="price" className="block text-sm font-medium text-gray-700">
-                  Price (₹)
-                </label>
+                <label>Price ₹</label>
                 <input
                   type="number"
-                  name="price"
-                  id="price"
-                  value={form.price}
-                  onChange={handleChange}
-                  step="1"
-                  min="0"
-                  required
-                  className={inputClasses}
+                  {...register("price", {
+                    required: "Price is required",
+                    min: { value: 1, message: "Must be greater than 0" },
+                    max: { value: 100000, message: "Max ₹100,000" }
+                  })}
+                  className={`${baseInput} ${errors.price ? "border-red-500" : ""}`}
                 />
+                <p className="text-red-500 text-xs">{errors.price?.message}</p>
               </div>
+
               <div>
-                <label htmlFor="quantity" className="block text-sm font-medium text-gray-700">
-                  Quantity
-                </label>
+                <label>Quantity</label>
                 <input
                   type="number"
-                  name="quantity"
-                  id="quantity"
-                  value={form.quantity}
-                  onChange={handleChange}
-                  required
-                  min="0"
-                  className={inputClasses}
+                  {...register("quantity", {
+                    required: "Quantity required",
+                    min: { value: 0, message: "Cannot be negative" },
+                    max: { value: 10000, message: "Max 10,000" }
+                  })}
+                  className={`${baseInput} ${errors.quantity ? "border-red-500" : ""}`}
                 />
+                <p className="text-red-500 text-xs">{errors.quantity?.message}</p>
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Book Cover Image (Optional)
-              </label>
+              <label className="text-sm font-medium text-gray-700">Book Cover Image (Optional)</label>
               <div
                 onDrop={onDrop}
                 onDragOver={onDragOver}
-                className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg"
+                className={`mt-2 rounded-lg border-2 border-dashed ${imageFile ? "border-gray-300 bg-gray-50" : "border-gray-300 bg-gray-50"} p-4`}
               >
-                <div className="space-y-1 text-center">
-                  <i className="fas fa-cloud-upload-alt text-gray-400 text-3xl"></i>
-                  <div className="flex text-sm text-gray-600">
-                    <label
-                      htmlFor="imageFile"
-                      className="relative cursor-pointer rounded-md bg-white font-medium text-purple-600 hover:text-purple-500"
-                    >
-                      <span>Upload a file</span>
-                      <input
-                        name="imageFile"
-                        id="imageFile"
-                        type="file"
-                        onChange={(e) => handleFileChange(e.target.files?.[0])}
-                        className="sr-only"
-                        accept="image/*"
-                      />
-                    </label>
-                    <p className="pl-1">or drag and drop</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 flex items-center justify-center rounded-md bg-white border">
+                    <i className="fas fa-image text-gray-500"></i>
                   </div>
-                  <p className="text-xs text-gray-500">
-                    Leave empty to keep the current image.
-                  </p>
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-700">Upload a clear cover image</p>
+                    <p className="text-xs text-gray-500">JPG, PNG, WebP up to 10MB</p>
+                  </div>
+                  <label className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-md cursor-pointer hover:bg-indigo-700">
+                    Browse
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleFileChange(e.target.files?.[0])}
+                      className="hidden"
+                    />
+                  </label>
                 </div>
-              </div>
-              <div id="imagePreviewContainer" className={`mt-4 ${imagePreview ? "" : "hidden"}`}>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Image Preview:</h4>
-                <img
-                  id="imagePreview"
-                  src={imagePreview}
-                  alt="Image Preview"
-                  className="w-48 h-64 object-cover rounded-lg shadow-md"
-                />
-              </div>
-            </div>
-            <div className="flex justify-between items-center">            
-            <div>
-              <p className="block text-sm font-medium text-gray-900">Published Date:
-              <span className=" text-gray-700 ml-1">
-                {new Date(book.publishedAt).toLocaleDateString()}
-              </span>
-              </p>
-              <p className="text-xs text-gray-500 mt-[2px]">
-                Published date is not editable.
-              </p>
-            </div>
-            <div className="flex justify-end space-x-4">
 
-              <Link
-                to="/publisher/dashboard"
-                className="rounded-lg text-gray-700 hover:bg-gray-50 px-4 py-2 border border-gray-300"
-              >
-                Cancel
-              </Link>
-              <button
-                type="submit"
-                disabled={actionLoading}
-                className={`text-white rounded-lg px-4 py-2 bg-purple-600 hover:bg-purple-700 ${
-                  actionLoading ? "opacity-70 cursor-not-allowed" : ""
-                }`}
-              >
-                {actionLoading ? "Saving..." : "Save Changes"}
-              </button>
+                {imagePreview && (
+                  <div className="mt-3 relative inline-block group">
+                    {/* Match auction card aspect and sizing (w-40 h-56) */}
+                    <img src={imagePreview} alt="Cover Preview" className="w-40 h-56 object-cover rounded-lg shadow-md" />
+                    <button
+                      type="button"
+                      onClick={() => { setImageFile(null); setImagePreview(""); }}
+                      className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition"
+                      aria-label="Remove cover image"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
+
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-sm font-medium">
+                  Published Date:
+                  <span className="ml-1 text-gray-600">
+                    {new Date(book.publishedAt).toLocaleDateString()}
+                  </span>
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <Link to="/publisher/dashboard" className="px-4 py-2 border rounded-lg">
+                  Cancel
+                </Link>
+                <button
+                  type="submit"
+                  disabled={actionLoading}
+                  className="bg-purple-600 text-white px-4 py-2 rounded-lg disabled:opacity-60"
+                >
+                  {actionLoading ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
             </div>
+
           </form>
         </div>
       </div>

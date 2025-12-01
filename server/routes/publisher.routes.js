@@ -6,6 +6,7 @@ import { CloudinaryStorage } from "multer-storage-cloudinary";
 import cloudinary from "../config/cloudinary.js";
 import { getPublisherDashboard, getPublisherProfile, updatePublisherProfile, createPublisherSignup, publishBook, sellAntique, getPublisherBook, updatePublisherBook, deletePublisherBook, restorePublisherBook } from "../controllers/publisher.controller.js";
 
+// Storage for regular book images (restrict to images)
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
@@ -16,6 +17,18 @@ const storage = new CloudinaryStorage({
 
 const upload = multer({ storage });
 
+// Storage for antique uploads: allow images and documents (resource_type auto)
+const antiqueStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: async (req, file) => ({
+    folder: "publishelf/antique",
+    resource_type: "auto",
+    // Let Cloudinary auto-detect; do not restrict formats here
+  }),
+});
+
+const uploadAntique = multer({ storage: antiqueStorage });
+
 const router = express.Router();
 
 router.get("/dashboard", protect, getPublisherDashboard);
@@ -23,9 +36,9 @@ router.get("/profile", protect, getPublisherProfile);
 router.put("/profile", protect, updatePublisherProfile);
 router.post("/signup", createPublisherSignup);
 router.post("/publish-book", protect, upload.single("imageFile"), publishBook);
-router.post("/sell-antique", protect, upload.fields([
+router.post("/sell-antique", protect, uploadAntique.fields([
   { name: "itemImage", maxCount: 1 },
-  { name: "authenticationImage", maxCount: 1 },
+  { name: "authenticationImages", maxCount: 5 },
 ]), sellAntique);
 
 router.get('/book/:id', protect, getPublisherBook);
