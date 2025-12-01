@@ -18,23 +18,16 @@ import {
   AlertDialogDescription,
   AlertDialogAction,
 } from "../../../components/ui/AlertDialog";
+import { AuthHeader, TextInput, PasswordField, ErrorMessage } from '../components';
+import { emailRules, passwordRules } from '../validations';
 
 const Login = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const {
-    register,
-    handleSubmit,
-    trigger,
-    formState: { errors },
-    watch
-  } = useForm({ mode: "onBlur" });
+  const { register, handleSubmit, trigger, formState: { errors } } = useForm({ mode: 'onBlur' });
 
-  const emailValue = watch("email", "");
-  const passwordValue = watch("password", "");
-
-  const [showPassword, setShowPassword] = useState(false);
+  // Removed individual watch usages after modularization
   const [rememberMe, setRememberMe] = useState(false);
   const [serverError, setServerError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -137,117 +130,37 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-purple-50 to-white bg-gray-50">
       <div className="max-w-md w-full">
 
-        {/* Logo + Heading */}
-        <div className="text-center mb-10">
-          <a href="/" className="inline-block">
-            <span className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 text-transparent bg-clip-text">
-              PubliShelf
-            </span>
-          </a>
-          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">Welcome back!</h2>
-
-          <p className="mt-2 text-sm text-gray-600">
-            Don't have an account?{" "}
-            <button
-              onClick={() => {
-                setShowSignupModal(true);
-                document.body.style.overflow = "hidden";
-              }}
-              className="font-medium text-purple-600 hover:text-purple-500"
-            >
-              Sign up
-            </button>
-          </p>
-        </div>
+        <AuthHeader
+          title="Welcome back!"
+          subtitle={<span>Don't have an account? <button onClick={() => { setShowSignupModal(true); document.body.style.overflow='hidden'; }} className="font-medium text-purple-600 hover:text-purple-500">Sign up</button></span>}
+        />
 
         {/* ------------------------------- FORM ------------------------------ */}
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="bg-white p-8 rounded-xl shadow-lg space-y-6 animate-fade-in">
 
-            {/* EMAIL */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Email address</label>
+            <TextInput
+              label="Email address"
+              name="email"
+              type="email"
+              placeholder="user@gmail.com"
+              iconClass="fas fa-envelope"
+              register={register}
+              rules={emailRules}
+              error={errors.email}
+              onBlurTrigger={trigger}
+            />
 
-              <div className="mt-1 relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <i className="fas fa-envelope text-gray-400"></i>
-                </div>
+            <PasswordField
+              name="password"
+              label="Password"
+              register={register}
+              rules={passwordRules}
+              error={errors.password}
+              onBlurTrigger={trigger}
+            />
 
-                <input
-                  type="email"
-                  placeholder="user@gmail.com"
-                  className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                  {...register("email", {
-                    required: "Email is required.",
-                    pattern: {
-                      value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                      message: "Please enter a valid email address.",
-                    },
-                    validate: {
-                      lowercaseOnly: (v) =>
-                        v === v.toLowerCase() || "Uppercase letters are not allowed.",
-                      noSpaces: (v) =>
-                        v.trim() === v || "Email cannot contain leading or trailing spaces.",
-                    },
-                  })}
-                  onBlur={() => trigger("email")}
-                />
-              </div>
-
-              {errors.email && (
-                <p className="text-red-500 text-sm">{errors.email.message}</p>
-              )}
-            </div>
-
-            {/* PASSWORD */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Password</label>
-
-              <div className="mt-1 relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <i className="fas fa-lock text-gray-400"></i>
-                </div>
-
-                <input
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                  {...register("password", {
-                    required: "Password is required.",
-                    minLength: {
-                      value: 3,
-                      message: "Password must be at least 3 characters long.",
-                    },
-                    validate: {
-                      noLeadingTrailingSpaces: (v) =>
-                        v.trim() === v || "Password cannot start or end with spaces.",
-                    },
-                  })}
-                  onBlur={() => trigger("password")}
-                />
-
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                >
-                  <i
-                    className={`fas ${
-                      showPassword ? "fa-eye-slash" : "fa-eye"
-                    } text-gray-400`}
-                  ></i>
-                </button>
-              </div>
-
-              {errors.password && (
-                <p className="text-red-500 text-sm">{errors.password.message}</p>
-              )}
-            </div>
-
-            {/* GLOBAL SERVER ERROR */}
-            {serverError && (
-              <p className="text-red-500 text-sm">{serverError}</p>
-            )}
+            <ErrorMessage message={serverError} />
 
             {/* Remember Me */}
             <div className="flex items-center justify-between">

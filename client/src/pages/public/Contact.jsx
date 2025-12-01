@@ -1,62 +1,43 @@
-import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import React from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import Footer from "./components/Footer";
 import Navbar from "./components/Navbar";
 
 const Contact = () => {
-  const [formData, setFormData] = useState({ name: "", email: "", message: "" });
-  const [errors, setErrors] = useState({ name: "", email: "", message: "" });
-  const [successMsg, setSuccessMsg] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, touchedFields, isSubmitted },
+    reset,
+  } = useForm({
+    mode: "onBlur",
+    reValidateMode: "onChange",
+  });
 
-  useEffect(() => {
-    const form = document.getElementById("contactForm");
-    const nameInput = document.getElementById("name");
-    const emailInput = document.getElementById("email");
-    const messageInput = document.getElementById("message");
-    const nameError = document.getElementById("nameError");
-    const emailError = document.getElementById("emailError");
-    const messageError = document.getElementById("messageError");
-    const successMsgElement = document.getElementById("successMsg");
+  // Validation helper - no leading/trailing spaces
+  const noEdgeSpaces = (value) => {
+    if (!value) return true;
+    return value === value.trim() || "No leading or trailing spaces allowed.";
+  };
 
-    const handleSubmit = (e) => {
-      e.preventDefault();
-      let valid = true;
-
-      const namePattern = /^[A-Za-z\s]+$/;
-      if (!namePattern.test(nameInput.value.trim()) || nameInput.value.trim().length < 2) {
-        nameError.textContent = "Name should contain only letters and be at least 2 characters.";
-        nameError.classList.remove("hidden");
-        valid = false;
-      } else 
-        nameError.classList.add("hidden");
-
-      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailPattern.test(emailInput.value.trim())) {
-        emailError.classList.remove("hidden");
-        valid = false;
-      } else
-        emailError.classList.add("hidden");
-
-      if (messageInput.value.trim().length < 10) {
-        messageError.classList.remove("hidden");
-        valid = false;
-      } else
-        messageError.classList.add("hidden");
-
-      if (valid) {
-        successMsgElement.classList.remove("hidden");
-        form.reset();
-        setFormData({ name: "", email: "", message: "" });
-        setTimeout(() => successMsgElement.classList.add("hidden"), 3000);
-      }
+  // Form submission handler
+  const onSubmit = (data) => {
+    // Trim all string values
+    const trimmedData = {
+      name: data.name.trim(),
+      email: data.email.trim(),
+      message: data.message.trim(),
     };
-
-    form.addEventListener("submit", handleSubmit);
-    return () => form.removeEventListener("submit", handleSubmit);
-  }, []);
-
-  const handleInputChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    
+    // Here you would typically send the data to your backend
+    console.log("Contact form submitted:", trimmedData);
+    
+    // Show success message
+    toast.success("Your message has been sent successfully!");
+    
+    // Reset form
+    reset();
   };
 
   return (
@@ -74,7 +55,7 @@ const Contact = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-12">
             <div className="bg-white rounded-lg shadow-md p-8 animate-fade-in">
               <h2 className="text-2xl font-bold text-gray-900 mb-4">Get in Touch</h2>
-              <form id="contactForm" className="space-y-4" noValidate>
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
                 <div>
                   <label htmlFor="name" className="block text-sm font-medium text-gray-700">
                     Name
@@ -82,16 +63,27 @@ const Contact = () => {
                   <input
                     type="text"
                     id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    required
-                    minLength="2"
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-600 focus:border-purple-600"
+                    {...register("name", {
+                      required: "Name is required.",
+                      minLength: {
+                        value: 2,
+                        message: "Name must be at least 2 characters long.",
+                      },
+                      pattern: {
+                        value: /^[A-Za-z\s]+$/,
+                        message: "Name should contain only letters and spaces.",
+                      },
+                      validate: {
+                        noEdgeSpaces,
+                      },
+                    })}
+                    className="mt-1 block w-full px-3 py-2 bg-white border-0 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 hover:shadow-md transition-shadow"
                   />
-                  <p id="nameError" className="text-red-500 text-sm mt-1 hidden">
-                    Name should contain only letters and be at least 2 characters.
-                  </p>
+                  {(touchedFields.name || isSubmitted) && errors.name && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.name.message}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700">
@@ -100,15 +92,25 @@ const Contact = () => {
                   <input
                     type="email"
                     id="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    required
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-600 focus:border-purple-600"
+                    {...register("email", {
+                      required: "Email is required.",
+                      pattern: {
+                        value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                        message: "Please enter a valid email address.",
+                      },
+                      validate: {
+                        noEdgeSpaces,
+                        lowercase: (value) =>
+                          value === value.toLowerCase() || "Email must be lowercase.",
+                      },
+                    })}
+                    className="mt-1 block w-full px-3 py-2 bg-white border-0 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 hover:shadow-md transition-shadow"
                   />
-                  <p id="emailError" className="text-red-500 text-sm mt-1 hidden">
-                    Please enter a valid email address.
-                  </p>
+                  {(touchedFields.email || isSubmitted) && errors.email && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.email.message}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label htmlFor="message" className="block text-sm font-medium text-gray-700">
@@ -116,26 +118,37 @@ const Contact = () => {
                   </label>
                   <textarea
                     id="message"
-                    name="message"
                     rows="4"
-                    value={formData.message}
-                    onChange={handleInputChange}
-                    required
-                    minLength="10"
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-600 focus:border-purple-600"
+                    {...register("message", {
+                      required: "Message is required.",
+                      minLength: {
+                        value: 10,
+                        message: "Message must be at least 10 characters long.",
+                      },
+                      maxLength: {
+                        value: 500,
+                        message: "Message must not exceed 500 characters.",
+                      },
+                      validate: {
+                        noEdgeSpaces,
+                      },
+                    })}
+                    className="mt-1 block w-full px-3 py-2 bg-white border-0 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 hover:shadow-md transition-shadow resize-none"
                   ></textarea>
-                  <p id="messageError" className="text-red-500 text-sm mt-1 hidden">
-                    Message should be at least 10 characters long.
-                  </p>
+                  {(touchedFields.message || isSubmitted) && errors.message && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.message.message}
+                    </p>
+                  )}
                 </div>
                 <div>
-                  <button type="submit" className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 hover:translate-y-[-2px] transition-all duration-500 linear w-full">
+                  <button 
+                    type="submit" 
+                    className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 hover:translate-y-[-2px] transition-all duration-500 linear w-full"
+                  >
                     Send Message
                   </button>
                 </div>
-                <p id="successMsg" className="text-green-600 text-center mt-3 hidden">
-                  Your message has been sent successfully!
-                </p>
               </form>
             </div>
 

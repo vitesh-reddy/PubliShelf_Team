@@ -13,6 +13,7 @@ import { useUser, useWishlist } from '../../../store/hooks';
 import { logout } from "../../../services/auth.services";
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import { useForm } from "react-hook-form";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,6 +24,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../../../components/ui/AlertDialog";
+import {
+  firstnameRules,
+  lastnameRules,
+  emailRules,
+  currentPasswordRules,
+  newPasswordRules,
+  confirmPasswordRules
+} from './profileValidation';
 
 const BuyerProfile = () => {
   const dispatch = useDispatch();
@@ -32,6 +41,20 @@ const BuyerProfile = () => {
   const [analytics, setAnalytics] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const saveBtnRef = useRef(null);
+  const navigate = useNavigate();
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors, touchedFields, isSubmitted }
+  } = useForm({ 
+    mode: "onBlur",
+    reValidateMode: "onChange"
+  });
 
   useEffect(() => {
     let ignore = false;
@@ -59,94 +82,56 @@ const BuyerProfile = () => {
     return () => { ignore = true; };
   }, [dispatch]);
   
-  const [showEditDialog, setShowEditDialog] = useState(false);
-  const [formData, setFormData] = useState({
-    firstname: user.firstname || "",
-    lastname: user.lastname || "",
-    email: user.email || "",
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
-  });
-  const [formErrors, setFormErrors] = useState({
-    emailError: "",
-    currentPasswordError: "",
-    passwordError: "",
-    generalError: "",
-  });
-  const saveBtnRef = useRef(null);
-  const navigate = useNavigate();
-
-  const handleInputChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    setFormErrors({
-      emailError: "",
-      currentPasswordError: "",
-      passwordError: "",
-      generalError: "",
-    });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const { email, currentPassword, newPassword, confirmPassword } = formData;
-
-    // Current password is always required
-    if (!currentPassword) {
-      setFormErrors({ ...formErrors, currentPasswordError: "Current password is required to update profile." });
-      return;
+  useEffect(() => {
+    if (user?._id) {
+      reset({
+        firstname: user.firstname || "",
+        lastname: user.lastname || "",
+        email: user.email || "",
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
     }
+  }, [user, reset]);
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setFormErrors({ ...formErrors, generalError: "Please enter a valid email address." });
-      return;
-    }
+  const newPassword = watch("newPassword");
 
-    // If changing password, validate new password fields
-    if (newPassword || confirmPassword) {
-      if (newPassword !== confirmPassword) {
-        setFormErrors({ ...formErrors, passwordError: "New passwords do not match." });
-        return;
-      }
-    }
-
+  const onSubmit = async (data) => {
     try {
       saveBtnRef.current.innerText = "Saving...";
       saveBtnRef.current.disabled = true;
 
+      const payload = {
+        firstname: data.firstname.trim(),
+        lastname: data.lastname.trim(),
+        email: data.email.trim(),
+        currentPassword: data.currentPassword.trim(),
+        confirmPassword: data.newPassword ? data.confirmPassword.trim() : "",
+      };
+
       const response = await updateProfileById({
         id: user._id,
-        profileData: {
-          firstname: formData.firstname.trim(),
-          lastname: formData.lastname.trim(),
-          email: formData.email.trim(),
-          currentPassword: formData.currentPassword.trim(),
-          // Only include confirmPassword if user wants to change password
-          confirmPassword: formData.newPassword ? formData.confirmPassword.trim() : "",
-        },
+        profileData: payload,
       });
 
-      if (!response.success) {
-        setFormErrors({ ...formErrors, generalError: response.message });
-      } else {
-        toast.success("Profile updated successfully.");
-        dispatch(updateUser({
-          firstname: formData.firstname.trim(),
-          lastname: formData.lastname.trim(),
-          email: formData.email.trim(),
-        }));
-        setShowEditDialog(false);
-        setFormData({
-          ...formData,
-          currentPassword: "",
-          newPassword: "",
-          confirmPassword: "",
-        });
+      if (!response?.success) {
+        toast.error(response?.message || "Update failed");
+        return;
       }
-    } catch (err) {
-      dispatch(updateUser(previousUserData));
-      setFormErrors({ ...formErrors, generalError: "Something went wrong. Please try again." });
+
+      dispatch(updateUser({
+        firstname: payload.firstname,
+        lastname: payload.lastname,
+        email: payload.email,
+      }));
+
+      toast.success("Profile updated successfully.");
+      setShowEditDialog(false);
+      reset();
+
+    } catch {
+      toast.error("Something went wrong.");
     } finally {
       saveBtnRef.current.innerText = "Save Changes";
       saveBtnRef.current.disabled = false;
@@ -174,12 +159,7 @@ const BuyerProfile = () => {
 
   const closeEditDialog = () => {
     setShowEditDialog(false);
-    setFormErrors({
-      emailError: "",
-      currentPasswordError: "",
-      passwordError: "",
-      generalError: "",
-    });
+    reset();
   };
 
   const getTimeAgo = (date) => {
@@ -604,147 +584,108 @@ const BuyerProfile = () => {
               </div>
 
               {/* Form */}
-              <form
-                id="updateProfileForm"
-                className="space-y-4"
-                onSubmit={handleSubmit}
-              >
-                <div>
-                  <label htmlFor="firstname" className="block text-sm font-medium text-gray-700 mb-1">
-                    First Name
-                  </label>
-                  <input
-                    type="text"
-                    id="firstname"
-                    name="firstname"
-                    value={formData.firstname}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    required
-                  />
-                </div>
+              <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
 
+                {/* First Name */}
                 <div>
-                  <label htmlFor="lastname" className="block text-sm font-medium text-gray-700 mb-1">
-                    Last Name
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
                   <input
-                    type="text"
-                    id="lastname"
-                    name="lastname"
-                    value={formData.lastname}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    required
+                    {...register("firstname", firstnameRules)}
+                    className="w-full px-4 py-2 bg-white rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:outline-none hover:shadow-md transition-shadow duration-200"
                   />
-                </div>
-
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    required
-                  />
-                  {formErrors.emailError && (
-                    <p className="text-red-500 text-sm mt-1">{formErrors.emailError}</p>
+                  {(errors.firstname && (touchedFields.firstname || isSubmitted)) && (
+                    <p className="text-red-500 text-sm mt-1">{errors.firstname.message}</p>
                   )}
                 </div>
 
+                {/* Last Name */}
                 <div>
-                  <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                    Current Password
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                  <input
+                    {...register("lastname", lastnameRules)}
+                    className="w-full px-4 py-2 bg-white rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:outline-none hover:shadow-md transition-shadow duration-200"
+                  />
+                  {(errors.lastname && (touchedFields.lastname || isSubmitted)) && (
+                    <p className="text-red-500 text-sm mt-1">{errors.lastname.message}</p>
+                  )}
+                </div>
+
+                {/* Email */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <input
+                    {...register("email", emailRules)}
+                    className="w-full px-4 py-2 bg-white rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:outline-none hover:shadow-md transition-shadow duration-200"
+                  />
+                  {(errors.email && (touchedFields.email || isSubmitted)) && (
+                    <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
+                  )}
+                </div>
+
+                {/* Current Password */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
                   <input
                     type="password"
-                    id="currentPassword"
-                    name="currentPassword"
-                    value={formData.currentPassword}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    required
+                    {...register("currentPassword", currentPasswordRules)}
+                    className="w-full px-4 py-2 bg-white rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:outline-none hover:shadow-md transition-shadow duration-200"
                   />
-                  {formErrors.currentPasswordError && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {formErrors.currentPasswordError}
-                    </p>
+                  {(errors.currentPassword && (touchedFields.currentPassword || isSubmitted)) && (
+                    <p className="text-red-500 text-sm mt-1">{errors.currentPassword.message}</p>
                   )}
                 </div>
 
+                {/* Change Password */}
+                <div className="border-t pt-4">
+                  <p className="text-sm font-medium text-gray-700 mb-2">Change Password (Optional)</p>
 
-                {/* Change Password Section */}
-                <div className="border-t border-gray-200 pt-4 mt-4">
-                  <p className="text-sm font-medium text-gray-700 mb-1">
-                    Change Password (Optional)
-                  </p>                  
                   <div className="space-y-3">
-
                     <div>
-                      <label htmlFor="newPassword" className="block text-sm text-gray-600 mb-1">
-                        New Password
-                      </label>
+                      <label className="block text-sm text-gray-700 mb-1">New Password</label>
                       <input
                         type="password"
-                        id="newPassword"
-                        name="newPassword"
-                        value={formData.newPassword}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        {...register("newPassword", newPasswordRules)}
+                        className="w-full px-4 py-2 bg-white rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:outline-none hover:shadow-md transition-shadow duration-200"
                       />
+                      {(errors.newPassword && (touchedFields.newPassword || isSubmitted)) && (
+                        <p className="text-red-500 text-sm mt-1">{errors.newPassword.message}</p>
+                      )}
                     </div>
 
                     <div>
-                      <label htmlFor="confirmPassword" className="block text-sm text-gray-600 mb-1">
-                        Confirm New Password
-                      </label>
+                      <label className="block text-sm text-gray-700 mb-1">Confirm New Password</label>
                       <input
                         type="password"
-                        id="confirmPassword"
-                        name="confirmPassword"
-                        value={formData.confirmPassword}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        {...register("confirmPassword", confirmPasswordRules(newPassword))}
+                        className="w-full px-4 py-2 bg-white rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:outline-none hover:shadow-md transition-shadow duration-200"
                       />
-                      {formErrors.passwordError && (
-                        <p className="text-red-500 text-sm mt-1">
-                          {formErrors.passwordError}
-                        </p>
+                      {(errors.confirmPassword && (touchedFields.confirmPassword || isSubmitted)) && (
+                        <p className="text-red-500 text-sm mt-1">{errors.confirmPassword.message}</p>
                       )}
                     </div>
                   </div>
                 </div>
-
-                {/* General Error */}
-                {formErrors.generalError && (
-                  <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
-                    {formErrors.generalError}
-                  </div>
-                )}
 
                 {/* Buttons */}
                 <div className="flex gap-3 pt-4">
                   <button
                     type="button"
                     onClick={closeEditDialog}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex-1 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors duration-200"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     ref={saveBtnRef}
-                    className="flex-1 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                    className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors duration-200 shadow-sm hover:shadow-md"
                   >
                     Save Changes
                   </button>
                 </div>
+
               </form>
+
             </div>
           </div>
         </div>

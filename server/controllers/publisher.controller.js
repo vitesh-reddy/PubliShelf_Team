@@ -378,16 +378,19 @@ export const sellAntique = async (req, res) => {
       auctionStart,
       auctionEnd,
     } = req.body;
-    if (!req.files || !req.files.itemImage || !req.files.authenticationImage) {
+    const authFiles = req.files?.authenticationImages || req.files?.authenticationImage;
+    if (!req.files || !req.files.itemImage || !authFiles) {
       return res.status(400).json({
         success: false,
-        message: "Please upload both images",
+        message: "Please upload item image and at least one authentication document",
         data: null
       });
     }
 
     const itemImageUrl = req.files.itemImage[0].path;
-    const authenticationImageUrl = req.files.authenticationImage[0].path;
+    // Normalize authentication files array (support legacy single name)
+    const authArray = Array.isArray(authFiles) ? authFiles : [authFiles];
+    const authenticationImages = authArray.map((f) => f.path).filter(Boolean);
 
     const newAntiqueBook = await createAntiqueBook({
       title,
@@ -399,7 +402,7 @@ export const sellAntique = async (req, res) => {
       auctionStart,
       auctionEnd,
       image: itemImageUrl,
-      authenticationImage: authenticationImageUrl,
+      authenticationImages,
       publisher: req.user.id,
       publishedAt: new Date(),
       // Moderation flags: send for verification
