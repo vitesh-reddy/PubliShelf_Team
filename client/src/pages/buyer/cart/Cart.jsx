@@ -2,10 +2,10 @@
 import React, { useMemo, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { updateCartQuantity, removeFromCart, addToCart, removeFromWishlist as removeFromWishlistApi, getCart } from "../../../services/buyer.services.js";
+// Wishlist operations now handled via async thunks
 import { useDispatch } from 'react-redux';
-import { updateCartQuantity as updateCartInStore, removeFromCart as removeFromCartInStore, addToCart as addToCartInStore, setCart } from '../../../store/slices/cartSlice';
-import { removeFromWishlist as removeFromWishlistInStore } from '../../../store/slices/wishlistSlice';
+import { fetchCart, updateCartQuantityThunk, removeFromCartThunk, addToCartThunk } from '../../../store/slices/cartSlice';
+import { removeFromWishlistThunk } from '../../../store/slices/wishlistSlice';
 import { useCart, useWishlist } from '../../../store/hooks';
 // Navbar and Footer are provided by BuyerLayout
 import StarRating from "../components/StarRating.jsx";
@@ -22,28 +22,15 @@ import {
 
 const Cart = () => {
   const dispatch = useDispatch();
-  const { items: cartItems } = useCart();
-  const { items: wishlistItems } = useWishlist();
+  const { items: cartItems, loading, error, isAdding, isUpdating, isRemoving } = useCart();
+  const { items: wishlistItems, isRemoving: isWishlistRemoving } = useWishlist();
   const navigate = useNavigate();
-  const [syncingCart, setSyncingCart] = useState(false);
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
   const [bookToRemove, setBookToRemove] = useState(null);
 
   // Sync cart with backend on mount to handle deleted books
   useEffect(() => {
-    const syncCart = async () => {
-      setSyncingCart(true);
-      try {
-        const response = await getCart();
-        if (response.success && response.data?.cart)
-          dispatch(setCart(response.data.cart));
-      } catch (err) {
-        console.error("Failed to sync cart:", err);
-      } finally {
-        setSyncingCart(false);
-      }
-    };
-    syncCart();
+    dispatch(fetchCart());
   }, [dispatch]);
 
   // Calculate totals from cart items
@@ -55,7 +42,7 @@ const Cart = () => {
     return { subtotal, shipping, tax, total };
   }, [cartItems]);
 
-  const handleQuantityChange = async (bookId, newQuantity) => {
+  const handleQuantityChange = (bookId, newQuantity) => {
     if (newQuantity < 1) return;
     
     const cartItem = cartItems.find(item => item.book._id === bookId);
@@ -65,16 +52,12 @@ const Cart = () => {
       toast.warning(`Only ${availableStock} items available in stock!`);
       return;
     }
-    
-    dispatch(updateCartInStore({ bookId, quantity: newQuantity }));
-    
-    try {
-      const response = await updateCartQuantity({ bookId, quantity: newQuantity });
-      if (!response.success)
-        toast.error(response.message || "Failed to update quantity");
-    } catch (err) {
-      toast.error("Error updating quantity");
-    }
+
+    dispatch(updateCartQuantityThunk({ bookId, quantity: newQuantity }))
+      .unwrap()
+      .catch((e) => {
+        toast.error(typeof e === 'string' ? e : 'Failed to update quantity');
+      });
   };
 
   const handleRemoveFromCart = (bookId) => {
@@ -82,27 +65,18 @@ const Cart = () => {
     setShowRemoveDialog(true);
   };
 
-  const confirmRemoveFromCart = async () => {
+  const confirmRemoveFromCart = () => {
     if (!bookToRemove) return;
 
-    dispatch(removeFromCartInStore({ bookId: bookToRemove }));
     setShowRemoveDialog(false);
-    
-    try {
-      const response = await removeFromCart(bookToRemove);
-      if (response.success) {
-        toast.success("Item removed from cart");
-      } else {
-        toast.error(response.message);
-      }
-    } catch (err) {
-      toast.error("Error removing item");
-    } finally {
-      setBookToRemove(null);
-    }
+    dispatch(removeFromCartThunk(bookToRemove))
+      .unwrap()
+      .then(() => toast.success('Item removed from cart'))
+      .catch((e) => toast.error(typeof e === 'string' ? e : 'Error removing item'))
+      .finally(() => setBookToRemove(null));
   };
 
-  const handleAddToCartFromWishlist = async (bookId) => {
+  const handleAddToCartFromWishlist = (bookId) => {
     // Find the book from wishlist
     const bookToAdd = wishlistItems.find(item => item._id === bookId);
     if (!bookToAdd) return;
@@ -119,36 +93,17 @@ const Cart = () => {
       return;
     }
 
-    // Optimistic update: add to cart store
-    dispatch(addToCartInStore({ book: bookToAdd, quantity: 1 }));
-
-    try {
-      const response = await addToCart({ bookId, quantity: 1 });
-      if (response.success) {
-        toast.success("Book added to cart successfully!");
-      } else {
-        toast.error(response.message || "Failed to add to cart");
-      }
-    } catch (err) {
-      toast.error("Error adding to cart");
-    }
+    dispatch(addToCartThunk({ bookId, quantity: 1, book: bookToAdd }))
+      .unwrap()
+      .then(() => toast.success('Book added to cart successfully!'))
+      .catch((e) => toast.error(typeof e === 'string' ? e : 'Failed to add to cart'));
   };
 
-  const handleRemoveFromWishlist = async (bookId) => {
-    // Update store immediately (optimistic)
-    dispatch(removeFromWishlistInStore({ bookId }));
-    
-    // Sync with backend
-    try {
-      const response = await removeFromWishlistApi(bookId);
-      if (response.success) {
-        toast.success("Removed from wishlist");
-      } else {
-        toast.error(response.message || "Failed to remove from wishlist");
-      }
-    } catch (err) {
-      toast.error("Error removing from wishlist");
-    }
+  const handleRemoveFromWishlist = (bookId) => {
+    dispatch(removeFromWishlistThunk(bookId))
+      .unwrap()
+      .then(() => toast.success('Removed from wishlist'))
+      .catch((e) => toast.error(typeof e === 'string' ? e : 'Failed to remove from wishlist'));
   };
 
   const hasOutOfStockItems = useMemo(() => {
@@ -172,7 +127,7 @@ const Cart = () => {
 
       <div className="pt-16">
         <div className="max-w-7xl px-4 py-8 mx-auto sm:px-6 lg:px-8">
-          {syncingCart ? (
+          {loading ? (
             <div className="flex justify-center items-center min-h-[400px]">
               <div className="text-center">
                 <i className="fas fa-spinner fa-spin text-4xl text-purple-600 mb-4"></i>
@@ -181,6 +136,11 @@ const Cart = () => {
             </div>
           ) : (
           <div className="flex flex-col gap-8 lg:flex-row">
+            {error && (
+              <div className="w-full p-3 mb-2 bg-red-50 border border-red-200 text-red-700 rounded">
+                {error}
+              </div>
+            )}
             {/* Cart Section */}
             <div className="lg:w-2/3">
               <div className="overflow-hidden bg-white rounded-xl shadow-lg">
@@ -243,28 +203,31 @@ const Cart = () => {
                           <div className="flex items-center border border-gray-300 rounded-lg">
                             <button
                               type="button"
-                              className="px-3 py-1 text-gray-600 hover:text-purple-600 decrement-btn"
+                              className={`px-3 py-1 text-gray-600 hover:text-purple-600 decrement-btn ${isUpdating(item.book._id) ? 'opacity-50 cursor-not-allowed' : ''}`}
                               data-book-id={item.book._id}
+                              disabled={isUpdating(item.book._id)}
                               onClick={() => handleQuantityChange(item.book._id, item.quantity - 1)}
                             >
-                              <i className="fas fa-minus"></i> 
+                              {isUpdating(item.book._id) ? <i className="fas fa-spinner fa-spin"></i> : <i className="fas fa-minus"></i>} 
                             </button>
                             <input
                               type="number"
                               value={item.quantity}
                               min="1"
                               max={item.book.quantity}
-                              className="w-12 text-center border-x border-gray-300 focus:outline-none focus:ring-0 quantity-input"
+                              className="w-12 text-center border-x border-gray-300 focus:outline-none focus:ring-0 quantity-input disabled:opacity-50"
                               data-book-id={item.book._id}
+                              disabled={isUpdating(item.book._id)}
                               onChange={(e) => handleQuantityChange(item.book._id, parseInt(e.target.value))}
                             />
                             <button
                               type="button"
-                              className="px-3 py-1 text-gray-600 hover:text-purple-600 increment-btn"
+                              className={`px-3 py-1 text-gray-600 hover:text-purple-600 increment-btn ${isUpdating(item.book._id) ? 'opacity-50 cursor-not-allowed' : ''}`}
                               data-book-id={item.book._id}
+                              disabled={isUpdating(item.book._id)}
                               onClick={() => handleQuantityChange(item.book._id, item.quantity + 1)}
                             >
-                              <i className="fas fa-plus"></i> 
+                              {isUpdating(item.book._id) ? <i className="fas fa-spinner fa-spin"></i> : <i className="fas fa-plus"></i>} 
                             </button>
                           </div>
                           <p className={`text-xs mt-1 text-center ${item.quantity === item.book.quantity ? 'text-orange-600 font-semibold' : 'text-gray-500'}`}>
@@ -280,11 +243,12 @@ const Cart = () => {
                           </p>
                           <button
                             type="button"
-                            className="text-sm text-red-500 hover:text-red-600 remove-from-cart-btn"
+                            className={`text-sm remove-from-cart-btn ${isRemoving(item.book._id) ? 'text-gray-400 cursor-not-allowed' : 'text-red-500 hover:text-red-600'}`}
                             data-book-id={item.book._id}
+                            disabled={isRemoving(item.book._id)}
                             onClick={() => handleRemoveFromCart(item.book._id)}
                           >
-                            Remove
+                            {isRemoving(item.book._id) ? 'Removing...' : 'Remove'}
                           </button>
                         </div>
                       </div>
@@ -343,9 +307,11 @@ const Cart = () => {
                             <button
                               type="button"
                               className={`w-full px-4 py-2 text-white transition-colors rounded-lg add-to-cart-btn ${
-                                isInCart 
-                                  ? 'bg-gray-400 cursor-not-allowed' 
-                                  : 'bg-purple-600 hover:bg-purple-700'
+                                isInCart
+                                  ? 'bg-gray-400 cursor-not-allowed'
+                                  : isAdding(item._id)
+                                    ? 'bg-purple-400 cursor-not-allowed'
+                                    : 'bg-purple-600 hover:bg-purple-700'
                               }`}
                               data-book-id={item._id}
                               data-title={item.title}
@@ -354,18 +320,19 @@ const Cart = () => {
                               data-image={item.image}
                               data-rating={item.rating || 0}
                               onClick={() => handleAddToCartFromWishlist(item._id)}
-                              disabled={isInCart}
+                              disabled={isInCart || isAdding(item._id)}
                             >
-                              {isInCart ? 'In Cart' : 'Add to Cart'}
+                              {isInCart ? 'In Cart' : isAdding(item._id) ? 'Adding...' : 'Add to Cart'}
                             </button>
                           );
                         })()}
                         <button
-                          className="text-sm text-red-500 hover:text-red-600 remove-from-wishlist-btn"
+                          className={`text-sm remove-from-wishlist-btn ${isWishlistRemoving(item._id) ? 'text-gray-400 cursor-not-allowed' : 'text-red-500 hover:text-red-600'}`}
                           data-book-id={item._id}
+                          disabled={isWishlistRemoving(item._id)}
                           onClick={() => handleRemoveFromWishlist(item._id)}
                         >
-                          Remove
+                          {isWishlistRemoving(item._id) ? 'Removing...' : 'Remove'}
                         </button>
                       </div>
                     </div>

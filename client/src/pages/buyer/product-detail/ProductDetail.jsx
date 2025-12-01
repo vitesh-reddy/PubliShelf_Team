@@ -3,10 +3,10 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { FaHeart, FaShoppingCart } from "react-icons/fa";
 import { toast } from "sonner";
-import { getProductDetail, addToCart, addToWishlist, removeFromWishlist } from "../../../services/buyer.services.js";
+import { getProductDetail } from "../../../services/buyer.services.js";
 import { useDispatch } from 'react-redux';
-import { addToCart as addToCartInStore } from '../../../store/slices/cartSlice';
-import { addToWishlist as addToWishlistInStore, removeFromWishlist as removeFromWishlistInStore } from '../../../store/slices/wishlistSlice';
+import { addToCartThunk } from '../../../store/slices/cartSlice';
+import { addToWishlistThunk, removeFromWishlistThunk } from '../../../store/slices/wishlistSlice';
 import { useCart, useWishlist } from '../../../store/hooks';
 // Navbar and Footer are provided by BuyerLayout
 import StarRating from "../components/StarRating.jsx";
@@ -15,7 +15,7 @@ const ProductDetail = () => {
   const dispatch = useDispatch();
   const { id } = useParams();
   const { items: cartItems } = useCart();
-  const { items: wishlistItems } = useWishlist();
+  const { items: wishlistItems, isAdding: isWishlistAdding, isRemoving: isWishlistRemoving } = useWishlist();
   
   const [book, setBook] = useState(null);
   const [similarBooks, setSimilarBooks] = useState([]);
@@ -28,27 +28,26 @@ const ProductDetail = () => {
   const isInWishlist = wishlistItems.some(item => item._id === id);
 
   useEffect(() => {
-    fetchBook();
+    const run = async () => {
+      try {
+        setLoading(true);
+        const response = await getProductDetail(id);
+        if (response.success) {
+          setBook(response.data.book);
+          setSimilarBooks(response.data.similarBooks || []);
+        } else {
+          setError(response.message);
+        }
+      } catch {
+        setError("Failed to fetch book details");
+      } finally {
+        setLoading(false);
+      }
+    };
+    run();
   }, [id]);
 
-  const fetchBook = async () => {
-    try {
-      setLoading(true);
-      const response = await getProductDetail(id);
-      if (response.success) {
-        setBook(response.data.book);
-        setSimilarBooks(response.data.similarBooks || []);
-      } else {
-        setError(response.message);
-      }
-    } catch (err) {
-      setError("Failed to fetch book details");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAddToCart = async () => {
+  const handleAddToCart = () => {
     if (book.quantity <= 0) {
       toast.error("This book is out of stock!");
       return;
@@ -58,56 +57,30 @@ const ProductDetail = () => {
       toast.info("Book is already in your cart!");
       return;
     }
-    
-    // Optimistic update: add to store immediately
-    dispatch(addToCartInStore({ book, quantity: 1 }));
-    
-    try {
-      const response = await addToCart({ bookId: id, quantity: 1 });
-      if (response.success) {
-        toast.success("Book added to cart successfully!");
-      } else {
-        // Revert on failure - for now just show message
-        toast.error(response.message);
-      }
-    } catch (err) {
-      toast.error("Error adding to cart");
-    }
+
+    dispatch(addToCartThunk({ bookId: id, quantity: 1, book }))
+      .unwrap()
+      .then(() => toast.success('Book added to cart successfully!'))
+      .catch((e) => toast.error(typeof e === 'string' ? e : 'Error adding to cart'));
   };
 
-  const handleToggleWishlist = async (targetBook) => {
+  const handleToggleWishlist = (targetBook) => {
     const targetId = targetBook?._id || id;
     const alreadyIn = wishlistItems.some(item => item._id === targetId);
 
     if (alreadyIn) {
-      // Optimistic remove
-      dispatch(removeFromWishlistInStore({ bookId: targetId }));
-      try {
-        const response = await removeFromWishlist(targetId);
-        if (response.success) {
-          toast.success('Removed from wishlist');
-        } else {
-          toast.error(response.message || 'Failed to remove from wishlist');
-        }
-      } catch {
-        toast.error('Error removing from wishlist');
-      }
+      dispatch(removeFromWishlistThunk(targetId))
+        .unwrap()
+        .then(() => toast.success('Removed from wishlist'))
+        .catch((e) => toast.error(typeof e === 'string' ? e : 'Failed to remove from wishlist'));
       return;
     }
 
-    // Optimistic add
     const payloadBook = targetBook || book;
-    dispatch(addToWishlistInStore(payloadBook));
-    try {
-      const response = await addToWishlist(targetId);
-      if (response.success) {
-        toast.success('Added to wishlist');
-      } else {
-        toast.error(response.message || 'Failed to add to wishlist');
-      }
-    } catch {
-      toast.error('Error adding to wishlist');
-    }
+    dispatch(addToWishlistThunk({ bookId: targetId, book: payloadBook }))
+      .unwrap()
+      .then(() => toast.success('Added to wishlist'))
+      .catch((e) => toast.error(typeof e === 'string' ? e : 'Failed to add to wishlist'));
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
@@ -246,12 +219,22 @@ const ProductDetail = () => {
                     <button
                       id="addToWishlistBtn"
                       onClick={() => handleToggleWishlist(book)}
-                      className={`flex items-center justify-center space-x-2 border border-purple-600 text-purple-600 px-6 py-3 rounded-lg transition-colors ${
-                        isInWishlist ? "text-red-500" : "hover:text-red-500"
+                      disabled={isWishlistAdding(book._id) || isWishlistRemoving(book._id)}
+                      className={`flex items-center justify-center space-x-2 border border-purple-600 px-6 py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                        isInWishlist ? 'text-red-500 border-red-400' : 'text-purple-600 hover:text-red-500'
                       }`}
                     >
-                      <i className={isInWishlist ? "fas fa-heart" : "far fa-heart"}></i>
-                      <span>{isInWishlist ? 'Wishlisted' : 'Add to Wishlist'}</span>
+                      {isWishlistAdding(book._id) || isWishlistRemoving(book._id) ? (
+                        <>
+                          <i className="fas fa-spinner fa-spin"></i>
+                          <span>Updating...</span>
+                        </>
+                      ) : (
+                        <>
+                          <i className={isInWishlist ? 'fas fa-heart' : 'far fa-heart'}></i>
+                          <span>{isInWishlist ? 'Wishlisted' : 'Add to Wishlist'}</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>
