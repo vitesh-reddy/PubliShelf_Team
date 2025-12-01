@@ -9,15 +9,7 @@ import { setCart } from "../../../store/slices/cartSlice";
 import { setWishlist } from "../../../store/slices/wishlistSlice";
 import { useNavigate } from "react-router-dom";
 
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogFooter,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogAction,
-} from "../../../components/ui/AlertDialog";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogAction } from "../../../components/ui/AlertDialog";
 import { AuthHeader, TextInput, PasswordField, ErrorMessage } from '../components';
 import { emailRules, passwordRules } from '../validations';
 

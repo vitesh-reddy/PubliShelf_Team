@@ -4,3 +4,6 @@ export { PasswordField } from './PasswordField';
 export { PasswordStrengthMeter } from './PasswordStrengthMeter';
 export { TermsCheckbox } from './TermsCheckbox';
 export { ErrorMessage } from './ErrorMessage';
+export { AuthFormCard } from './AuthFormCard';
+export { NameFields } from './NameFields';
+export { ConfirmPasswordField } from './ConfirmPasswordField';

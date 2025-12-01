@@ -1,10 +1,6 @@
-import React from 'react';
-
-// Terms acceptance checkbox.
-// Props: name (default termsAccepted), register, rules, error
 export const TermsCheckbox = ({ name='termsAccepted', register, rules, error, onBlurTrigger }) => {
   return (
-    <div className="flex items-center">
+    <div className="flex items-center relative">
       <input
         id={name}
         type="checkbox"

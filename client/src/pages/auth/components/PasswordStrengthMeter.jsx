@@ -1,7 +1,3 @@
-import React from 'react';
-
-// Simple strength meter bar + label + animated next requirement hint.
-// Props: password (string)
 export const PasswordStrengthMeter = ({ password }) => {
   if (!password) return null;
   let score = 0;

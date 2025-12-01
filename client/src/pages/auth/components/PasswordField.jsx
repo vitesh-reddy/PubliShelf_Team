@@ -15,7 +15,7 @@ export const PasswordField = ({ name='password', label='Password', placeholder='
           id={name}
           type={show ? 'text' : 'password'}
           placeholder={placeholder}
-          className="appearance-none block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+          className="appearance-none block w-full pl-10 pr-10 py-2 border border-gray-300 shadow-sm hover:shadow-md transition-all duration-200 rounded-lg focus:ring-2 focus:ring-purple-500"
           {...register(name, rules)}
           onBlur={() => onBlurTrigger && onBlurTrigger(name)}
         />

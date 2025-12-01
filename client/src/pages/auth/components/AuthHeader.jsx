@@ -1,10 +1,3 @@
-import React from 'react';
-
-// Reusable header for auth pages.
-// Props:
-// - title: main heading text
-// - subtitle: optional subtitle JSX/text
-// - children: optional extra controls (e.g. Sign up button in login)
 export const AuthHeader = ({ title, subtitle, children }) => {
   return (
     <div className="text-center mb-10">
