@@ -32,6 +32,52 @@ import {
 // Register ChartJS components
 ChartJS.register( CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend, Filler);
 
+const SkeletonMetric = () => (
+  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 skeleton-shimmer animate-fade-in">
+    <div className="h-4 w-32 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded mb-4" />
+    <div className="h-6 w-48 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded" />
+  </div>
+);
+
+const SkeletonCard = () => (
+  <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden skeleton-shimmer animate-fade-in">
+    <div className="p-4 space-y-3">
+      <div className="w-full h-40 md:h-64 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded mb-3" />
+      <div className="h-4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-3/4" />
+      <div className="h-3 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-1/2" />
+      <div className="flex justify-between items-center pt-2">
+        <div className="space-y-2">
+          <div className="h-4 w-16 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded" />
+          <div className="h-3 w-20 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded" />
+        </div>
+        <div className="h-7 w-7 rounded-full bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200" />
+      </div>
+    </div>
+  </div>
+);
+
+const SkeletonListItem = () => (
+  <div className="border border-gray-200 rounded-lg p-4 skeleton-shimmer animate-fade-in">
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200" />
+        <div>
+          <div className="h-4 w-40 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded mb-2" />
+          <div className="h-3 w-48 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded" />
+        </div>
+      </div>
+      <div className="text-right">
+        <div className="h-5 w-24 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded mb-2" />
+        <div className="h-3 w-20 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded" />
+      </div>
+    </div>
+    <div className="flex justify-between items-center mt-3">
+      <div className="h-3 w-48 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded" />
+      <div className="h-6 w-24 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-full" />
+    </div>
+  </div>
+);
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -40,6 +86,8 @@ const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [loading, setLoading] = useState(true); // <-- loading state for initial API fetch
+  const [tabLoading, setTabLoading] = useState(false); // for simulated loading when switching tabs
 
   const {
     register,
@@ -61,6 +109,7 @@ const Dashboard = () => {
 
   const loadProfile = async () => {
     try {
+      setLoading(true);
       const res = await getProfile();
       if (res?.success && res?.data?.user) {
         setUser(res.data.user);
@@ -76,9 +125,13 @@ const Dashboard = () => {
       }
       if (res?.data?.analytics) {
         setAnalytics(res.data.analytics);
+      } else {
+        setAnalytics(null);
       }
     } catch (e) {
       console.error("Failed to load profile:", e);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -132,24 +185,53 @@ const Dashboard = () => {
     navigate("/auth/login");
   };
 
+  // Handle tab change with small random artificial loading to show skeleton
+  const handleTabChange = (tabKey) => {
+    if (tabKey === activeTab) return;
+    // show skeleton only for revenue and buyers (as requested)
+    setActiveTab(tabKey);
+    if (tabKey === 'revenue' || tabKey === 'buyers') {
+      setTabLoading(true);
+      const delay = Math.floor(Math.random() * (700 - 300 + 1)) + 300; // 300-700ms
+      setTimeout(() => setTabLoading(false), delay);
+    } else {
+      // ensure tabLoading false for other tabs
+      setTabLoading(false);
+    }
+  };
+
   return (
     <div className="bg-gray-50 min-h-screen">
       <div className="pb-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Profile Header */}
+          {/* Profile Header (static parts should remain visible even while loading dynamic content) */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-6">
-                <div className="bg-purple-600 rounded-full w-20 h-20 flex items-center justify-center text-white text-3xl font-bold">
-                  {user.firstname?.charAt(0)}{user.lastname?.charAt(0)}
-                </div>
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-900">
-                    {user.firstname} {user.lastname}
-                  </h1>
-                  <p className="text-gray-600 mt-1">{user.email}</p>
-                  <p className="text-purple-600 font-medium mt-1">{user.publishingHouse}</p>
-                </div>
+                {/* --------- ONLY PROFILE PART: show skeleton while loading --------- */}
+                {loading ? (
+                  <>
+                    <div className="rounded-full w-20 h-20 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 skeleton-shimmer animate-fade-in" />
+                    <div className="space-y-2">
+                      <div className="h-6 w-48 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded skeleton-shimmer animate-fade-in" />
+                      <div className="h-4 w-36 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded skeleton-shimmer animate-fade-in" />
+                      <div className="h-4 w-40 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded skeleton-shimmer animate-fade-in" />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="bg-purple-600 rounded-full w-20 h-20 flex items-center justify-center text-white text-3xl font-bold">
+                      {user.firstname?.charAt(0)}{user.lastname?.charAt(0)}
+                    </div>
+                    <div>
+                      <h1 className="text-3xl font-bold text-gray-900">
+                        {user.firstname} {user.lastname}
+                      </h1>
+                      <p className="text-gray-600 mt-1">{user.email}</p>
+                      <p className="text-purple-600 font-medium mt-1">{user.publishingHouse}</p>
+                    </div>
+                  </>
+                )}
               </div>
               <div className="flex items-center gap-3">
                 <button
@@ -173,7 +255,7 @@ const Dashboard = () => {
           <div className="mb-6 border-b border-gray-200">
             <div className="flex space-x-8">
               <button
-                onClick={() => setActiveTab('overview')}
+                onClick={() => handleTabChange('overview')}
                 className={`pb-4 font-medium transition-colors ${
                   activeTab === 'overview'
                     ? 'text-purple-600 border-b-2 border-purple-600'
@@ -183,7 +265,7 @@ const Dashboard = () => {
                 Overview
               </button>
               <button
-                onClick={() => setActiveTab('revenue')}
+                onClick={() => handleTabChange('revenue')}
                 className={`pb-4 font-medium transition-colors ${
                   activeTab === 'revenue'
                     ? 'text-purple-600 border-b-2 border-purple-600'
@@ -193,7 +275,7 @@ const Dashboard = () => {
                 Revenue Analytics
               </button>
               <button
-                onClick={() => setActiveTab('buyers')}
+                onClick={() => handleTabChange('buyers')}
                 className={`pb-4 font-medium transition-colors ${
                   activeTab === 'buyers'
                     ? 'text-purple-600 border-b-2 border-purple-600'
@@ -206,161 +288,188 @@ const Dashboard = () => {
           </div>
 
           {/* Content based on active tab */}
-          {activeTab === 'overview' && analytics && (
+          {activeTab === 'overview' && (
             <div className="space-y-8">
               {/* Key Metrics */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-gray-600">Total Revenue</p>
-                      <p className="text-2xl font-bold text-purple-600 mt-1">
-                        ₹{analytics.totalRevenue.toFixed(2)}
-                      </p>
+                {loading ? (
+                  // show skeleton metrics while loading initial fetch
+                  <>
+                    <SkeletonMetric />
+                    <SkeletonMetric />
+                    <SkeletonMetric />
+                    <SkeletonMetric />
+                  </>
+                ) : (
+                  <>
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-gray-600">Total Revenue</p>
+                          <p className="text-2xl font-bold text-purple-600 mt-1">
+                            ₹{analytics.totalRevenue.toFixed(2)}
+                          </p>
+                        </div>
+                        <div className="bg-purple-100 rounded-full p-3">
+                          <i className="fas fa-rupee-sign text-purple-600 text-xl"></i>
+                        </div>
+                      </div>
                     </div>
-                    <div className="bg-purple-100 rounded-full p-3">
-                      <i className="fas fa-rupee-sign text-purple-600 text-xl"></i>
-                    </div>
-                  </div>
-                </div>
 
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-gray-600">Books Sold</p>
-                      <p className="text-2xl font-bold text-indigo-600 mt-1">
-                        {analytics.totalBooksSold}
-                      </p>
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-gray-600">Books Sold</p>
+                          <p className="text-2xl font-bold text-indigo-600 mt-1">
+                            {analytics.totalBooksSold}
+                          </p>
+                        </div>
+                        <div className="bg-indigo-100 rounded-full p-3">
+                          <i className="fas fa-book text-indigo-600 text-xl"></i>
+                        </div>
+                      </div>
                     </div>
-                    <div className="bg-indigo-100 rounded-full p-3">
-                      <i className="fas fa-book text-indigo-600 text-xl"></i>
-                    </div>
-                  </div>
-                </div>
 
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-gray-600">Active Books</p>
-                      <p className="text-2xl font-bold text-green-600 mt-1">
-                        {analytics.activeBooks}
-                      </p>
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-gray-600">Active Books</p>
+                          <p className="text-2xl font-bold text-green-600 mt-1">
+                            {analytics.activeBooks}
+                          </p>
+                        </div>
+                        <div className="bg-green-100 rounded-full p-3">
+                          <i className="fas fa-check-circle text-green-600 text-xl"></i>
+                        </div>
+                      </div>
                     </div>
-                    <div className="bg-green-100 rounded-full p-3">
-                      <i className="fas fa-check-circle text-green-600 text-xl"></i>
-                    </div>
-                  </div>
-                </div>
 
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-gray-600">Total Books</p>
-                      <p className="text-2xl font-bold text-gray-600 mt-1">
-                        {analytics.totalBooks}
-                      </p>
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-gray-600">Total Books</p>
+                          <p className="text-2xl font-bold text-gray-600 mt-1">
+                            {analytics.totalBooks}
+                          </p>
+                        </div>
+                        <div className="bg-gray-100 rounded-full p-3">
+                          <i className="fas fa-layer-group text-gray-600 text-xl"></i>
+                        </div>
+                      </div>
                     </div>
-                    <div className="bg-gray-100 rounded-full p-3">
-                      <i className="fas fa-layer-group text-gray-600 text-xl"></i>
-                    </div>
-                  </div>
-                </div>
+                  </>
+                )}
               </div>
 
               {/* Top Selling Books */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <h2 className="text-xl font-bold text-gray-900 mb-6">Top Selling Books</h2>
-                {analytics.topSellingBooks && analytics.topSellingBooks.length > 0 ? (
+                {loading ? (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* List View */}
                     <div className="space-y-3">
-                      {analytics.topSellingBooks.slice(0, 3).map((book, index) => (
-                        <div key={index} className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg border border-purple-100">
-                          <div className="flex items-center gap-3">
-                            <span className="flex items-center justify-center w-8 h-8 bg-purple-600 text-white rounded-full text-sm font-bold">
-                              {index + 1}
-                            </span>
-                            <div>
-                              <p className="font-medium text-gray-900">{book.title}</p>
-                              <p className="text-sm text-gray-500">{book.quantity} copies sold</p>
-                            </div>
-                          </div>
-                          <p className="font-bold text-purple-600">₹{book.revenue.toFixed(2)}</p>
-                        </div>
-                      ))}
+                      <SkeletonListItem />
+                      <SkeletonListItem />
+                      <SkeletonListItem />
                     </div>
-                    
-                    {/* Bar Chart */}
                     <div className="h-64">
-                      <Bar
-                        data={{
-                          labels: analytics.topSellingBooks.map(book => 
-                            book.title.length > 20 ? book.title.substring(0, 20) + '...' : book.title
-                          ),
-                          datasets: [
-                            {
-                              label: 'Revenue (₹)',
-                              data: analytics.topSellingBooks.map(book => book.revenue),
-                              backgroundColor: [
-                                'rgba(147, 51, 234, 0.8)',
-                                'rgba(99, 102, 241, 0.8)',
-                                'rgba(59, 130, 246, 0.8)',
-                                'rgba(34, 197, 94, 0.8)',
-                                'rgba(20, 184, 166, 0.8)',
-                              ],
-                              borderColor: [
-                                'rgb(147, 51, 234)',
-                                'rgb(99, 102, 241)',
-                                'rgb(59, 130, 246)',
-                                'rgb(34, 197, 94)',
-                                'rgb(20, 184, 166)',
-                              ],
-                              borderWidth: 2,
-                              borderRadius: 6,
-                            },
-                          ],
-                        }}
-                        options={{
-                          indexAxis: 'y',
-                          responsive: true,
-                          maintainAspectRatio: false,
-                          plugins: {
-                            legend: {
-                              display: false,
-                            },
-                            tooltip: {
-                              callbacks: {
-                                label: function(context) {
-                                  return `Revenue: ₹${context.parsed.x.toFixed(2)}`;
-                                },
-                                afterLabel: function(context) {
-                                  const book = analytics.topSellingBooks[context.dataIndex];
-                                  return `Copies Sold: ${book.quantity}`;
-                                }
-                              }
-                            }
-                          },
-                          scales: {
-                            x: {
-                              beginAtZero: true,
-                              ticks: {
-                                callback: function(value) {
-                                  return '₹' + value;
-                                }
-                              }
-                            }
-                          }
-                        }}
-                      />
+                      <SkeletonCard />
                     </div>
                   </div>
                 ) : (
-                  <p className="text-gray-500 text-center py-4">No sales data available</p>
+                  <>
+                    {analytics.topSellingBooks && analytics.topSellingBooks.length > 0 ? (
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* List View */}
+                        <div className="space-y-3">
+                          {analytics.topSellingBooks.slice(0, 3).map((book, index) => (
+                            <div key={index} className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg border border-purple-100">
+                              <div className="flex items-center gap-3">
+                                <span className="flex items-center justify-center w-8 h-8 bg-purple-600 text-white rounded-full text-sm font-bold">
+                                  {index + 1}
+                                </span>
+                                <div>
+                                  <p className="font-medium text-gray-900">{book.title}</p>
+                                  <p className="text-sm text-gray-500">{book.quantity} copies sold</p>
+                                </div>
+                              </div>
+                              <p className="font-bold text-purple-600">₹{book.revenue.toFixed(2)}</p>
+                            </div>
+                          ))}
+                        </div>
+                        
+                        {/* Bar Chart */}
+                        <div className="h-64">
+                          <Bar
+                            data={{
+                              labels: analytics.topSellingBooks.map(book => 
+                                book.title.length > 20 ? book.title.substring(0, 20) + '...' : book.title
+                              ),
+                              datasets: [
+                                {
+                                  label: 'Revenue (₹)',
+                                  data: analytics.topSellingBooks.map(book => book.revenue),
+                                  backgroundColor: [
+                                    'rgba(147, 51, 234, 0.8)',
+                                    'rgba(99, 102, 241, 0.8)',
+                                    'rgba(59, 130, 246, 0.8)',
+                                    'rgba(34, 197, 94, 0.8)',
+                                    'rgba(20, 184, 166, 0.8)',
+                                  ],
+                                  borderColor: [
+                                    'rgb(147, 51, 234)',
+                                    'rgb(99, 102, 241)',
+                                    'rgb(59, 130, 246)',
+                                    'rgb(34, 197, 94)',
+                                    'rgb(20, 184, 166)',
+                                  ],
+                                  borderWidth: 2,
+                                  borderRadius: 6,
+                                },
+                              ],
+                            }}
+                            options={{
+                              indexAxis: 'y',
+                              responsive: true,
+                              maintainAspectRatio: false,
+                              plugins: {
+                                legend: {
+                                  display: false,
+                                },
+                                tooltip: {
+                                  callbacks: {
+                                    label: function(context) {
+                                      return `Revenue: ₹${context.parsed.x.toFixed(2)}`;
+                                    },
+                                    afterLabel: function(context) {
+                                      const book = analytics.topSellingBooks[context.dataIndex];
+                                      return `Copies Sold: ${book.quantity}`;
+                                    }
+                                  }
+                                }
+                              },
+                              scales: {
+                                x: {
+                                  beginAtZero: true,
+                                  ticks: {
+                                    callback: function(value) {
+                                      return '₹' + value;
+                                    }
+                                  }
+                                }
+                              }
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 text-center py-4">No sales data available</p>
+                    )}
+                  </>
                 )}
               </div>
 
               {/* Low Stock Alerts */}
-              {analytics.lowStockBooks && analytics.lowStockBooks.length > 0 && (
+              {!loading && analytics && analytics.lowStockBooks && analytics.lowStockBooks.length > 0 && (
                 <div className="bg-white rounded-xl shadow-sm border border-amber-200 p-6">
                   <div className="flex items-center gap-2 mb-4">
                     <i className="fas fa-exclamation-triangle text-amber-500"></i>
@@ -381,102 +490,33 @@ const Dashboard = () => {
             </div>
           )}
 
-          {activeTab === 'revenue' && analytics && (
+          {activeTab === 'revenue' && (
             <div className="space-y-8">
               {/* Revenue Trend - Line Chart */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <h2 className="text-xl font-bold text-gray-900 mb-6">Revenue Trend (Last 6 Months)</h2>
-                {analytics.revenueData && analytics.revenueData.length > 0 ? (
-                  <div className="h-80">
-                    <Line
-                      data={{
-                        labels: analytics.revenueData.map(item => item.month),
-                        datasets: [
-                          {
-                            label: 'Revenue (₹)',
-                            data: analytics.revenueData.map(item => item.revenue),
-                            borderColor: 'rgb(147, 51, 234)',
-                            backgroundColor: 'rgba(147, 51, 234, 0.1)',
-                            tension: 0.4,
-                            fill: true,
-                            pointBackgroundColor: 'rgb(147, 51, 234)',
-                            pointBorderColor: '#fff',
-                            pointBorderWidth: 2,
-                            pointRadius: 5,
-                            pointHoverRadius: 7,
-                          },
-                        ],
-                      }}
-                      options={{
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                          legend: {
-                            display: true,
-                            position: 'top',
-                          },
-                          tooltip: {
-                            callbacks: {
-                              label: function(context) {
-                                return `Revenue: ₹${context.parsed.y.toFixed(2)}`;
-                              }
-                            }
-                          }
-                        },
-                        scales: {
-                          y: {
-                            beginAtZero: true,
-                            ticks: {
-                              callback: function(value) {
-                                return '₹' + value;
-                              }
-                            }
-                          }
-                        }
-                      }}
-                    />
-                  </div>
+                {(loading || (tabLoading && activeTab === 'revenue')) ? (
+                  <SkeletonCard />
                 ) : (
-                  <p className="text-gray-500 text-center py-8">No revenue data available</p>
-                )}
-              </div>
-
-              {/* Genre Breakdown */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-6">Genre Performance</h2>
-                {analytics.genreBreakdown && analytics.genreBreakdown.length > 0 ? (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {/* Doughnut Chart */}
-                    <div className="flex flex-col items-center justify-center">
-                      <div className="text-center mb-4">
-                        <p className="text-sm font-medium text-gray-600">Revenue Distribution</p>
-                        <p className="text-2xl font-bold text-purple-600">
-                          ₹{analytics.genreBreakdown.reduce((sum, g) => sum + g.revenue, 0).toFixed(2)}
-                        </p>
-                      </div>
-                      <div className="w-full max-w-sm h-64">
-                        <Doughnut
+                  <>
+                    {analytics.revenueData && analytics.revenueData.length > 0 ? (
+                      <div className="h-80">
+                        <Line
                           data={{
-                            labels: analytics.genreBreakdown.map(g => g.genre),
+                            labels: analytics.revenueData.map(item => item.month),
                             datasets: [
                               {
-                                label: 'Revenue',
-                                data: analytics.genreBreakdown.map(g => g.revenue),
-                                backgroundColor: [
-                                  'rgba(147, 51, 234, 0.8)',
-                                  'rgba(99, 102, 241, 0.8)',
-                                  'rgba(59, 130, 246, 0.8)',
-                                  'rgba(34, 197, 94, 0.8)',
-                                  'rgba(20, 184, 166, 0.8)',
-                                ],
-                                borderColor: [
-                                  'rgb(147, 51, 234)',
-                                  'rgb(99, 102, 241)',
-                                  'rgb(59, 130, 246)',
-                                  'rgb(34, 197, 94)',
-                                  'rgb(20, 184, 166)',
-                                ],
-                                borderWidth: 2,
+                                label: 'Revenue (₹)',
+                                data: analytics.revenueData.map(item => item.revenue),
+                                borderColor: 'rgb(147, 51, 234)',
+                                backgroundColor: 'rgba(147, 51, 234, 0.1)',
+                                tension: 0.4,
+                                fill: true,
+                                pointBackgroundColor: 'rgb(147, 51, 234)',
+                                pointBorderColor: '#fff',
+                                pointBorderWidth: 2,
+                                pointRadius: 5,
+                                pointHoverRadius: 7,
                               },
                             ],
                           }}
@@ -485,61 +525,13 @@ const Dashboard = () => {
                             maintainAspectRatio: false,
                             plugins: {
                               legend: {
-                                position: 'bottom',
+                                display: true,
+                                position: 'top',
                               },
                               tooltip: {
                                 callbacks: {
                                   label: function(context) {
-                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                    const percentage = ((context.parsed / total) * 100).toFixed(1);
-                                    return `${context.label}: ₹${context.parsed.toFixed(2)} (${percentage}%)`;
-                                  }
-                                }
-                              }
-                            }
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Bar Chart for Books Sold by Genre */}
-                    <div className="flex flex-col">
-                      <div className="text-center mb-4">
-                        <p className="text-sm font-medium text-gray-600">Books Sold by Genre</p>
-                        <p className="text-2xl font-bold text-indigo-600">
-                          {analytics.genreBreakdown.reduce((sum, g) => sum + g.quantity, 0)} books
-                        </p>
-                      </div>
-                      <div className="h-64">
-                        <Bar
-                          data={{
-                            labels: analytics.genreBreakdown.map(g => g.genre),
-                            datasets: [
-                              {
-                                label: 'Books Sold',
-                                data: analytics.genreBreakdown.map(g => g.quantity),
-                                backgroundColor: 'rgba(99, 102, 241, 0.7)',
-                                borderColor: 'rgb(99, 102, 241)',
-                                borderWidth: 2,
-                                borderRadius: 8,
-                              },
-                            ],
-                          }}
-                          options={{
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                              legend: {
-                                display: false,
-                              },
-                              tooltip: {
-                                callbacks: {
-                                  label: function(context) {
-                                    return `Books Sold: ${context.parsed.y}`;
-                                  },
-                                  afterLabel: function(context) {
-                                    const revenue = analytics.genreBreakdown[context.dataIndex].revenue;
-                                    return `Revenue: ₹${revenue.toFixed(2)}`;
+                                    return `Revenue: ₹${context.parsed.y.toFixed(2)}`;
                                   }
                                 }
                               }
@@ -548,72 +540,214 @@ const Dashboard = () => {
                               y: {
                                 beginAtZero: true,
                                 ticks: {
-                                  stepSize: 1,
+                                  callback: function(value) {
+                                    return '₹' + value;
+                                  }
                                 }
                               }
                             }
                           }}
                         />
                       </div>
-                    </div>
+                    ) : (
+                      <p className="text-gray-500 text-center py-8">No revenue data available</p>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {/* Genre Breakdown */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-6">Genre Performance</h2>
+                {(loading || (tabLoading && activeTab === 'revenue')) ? (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <SkeletonCard />
+                    <SkeletonCard />
                   </div>
                 ) : (
-                  <p className="text-gray-500 text-center py-8">No genre data available</p>
+                  <>
+                    {analytics.genreBreakdown && analytics.genreBreakdown.length > 0 ? (
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {/* Doughnut Chart */}
+                        <div className="flex flex-col items-center justify-center">
+                          <div className="text-center mb-4">
+                            <p className="text-sm font-medium text-gray-600">Revenue Distribution</p>
+                            <p className="text-2xl font-bold text-purple-600">
+                              ₹{analytics.genreBreakdown.reduce((sum, g) => sum + g.revenue, 0).toFixed(2)}
+                            </p>
+                          </div>
+                          <div className="w-full max-w-sm h-64">
+                            <Doughnut
+                              data={{
+                                labels: analytics.genreBreakdown.map(g => g.genre),
+                                datasets: [
+                                  {
+                                    label: 'Revenue',
+                                    data: analytics.genreBreakdown.map(g => g.revenue),
+                                    backgroundColor: [
+                                      'rgba(147, 51, 234, 0.8)',
+                                      'rgba(99, 102, 241, 0.8)',
+                                      'rgba(59, 130, 246, 0.8)',
+                                      'rgba(34, 197, 94, 0.8)',
+                                      'rgba(20, 184, 166, 0.8)',
+                                    ],
+                                    borderColor: [
+                                      'rgb(147, 51, 234)',
+                                      'rgb(99, 102, 241)',
+                                      'rgb(59, 130, 246)',
+                                      'rgb(34, 197, 94)',
+                                      'rgb(20, 184, 166)',
+                                    ],
+                                    borderWidth: 2,
+                                  },
+                                ],
+                              }}
+                              options={{
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                  legend: {
+                                    position: 'bottom',
+                                  },
+                                  tooltip: {
+                                    callbacks: {
+                                      label: function(context) {
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                        return `${context.label}: ₹${context.parsed.toFixed(2)} (${percentage}%)`;
+                                      }
+                                    }
+                                  }
+                                }
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Bar Chart for Books Sold by Genre */}
+                        <div className="flex flex-col">
+                          <div className="text-center mb-4">
+                            <p className="text-sm font-medium text-gray-600">Books Sold by Genre</p>
+                            <p className="text-2xl font-bold text-indigo-600">
+                              {analytics.genreBreakdown.reduce((sum, g) => sum + g.quantity, 0)} books
+                            </p>
+                          </div>
+                          <div className="h-64">
+                            <Bar
+                              data={{
+                                labels: analytics.genreBreakdown.map(g => g.genre),
+                                datasets: [
+                                  {
+                                    label: 'Books Sold',
+                                    data: analytics.genreBreakdown.map(g => g.quantity),
+                                    backgroundColor: 'rgba(99, 102, 241, 0.7)',
+                                    borderColor: 'rgb(99, 102, 241)',
+                                    borderWidth: 2,
+                                    borderRadius: 8,
+                                  },
+                                ],
+                              }}
+                              options={{
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                  legend: {
+                                    display: false,
+                                  },
+                                  tooltip: {
+                                    callbacks: {
+                                      label: function(context) {
+                                        return `Books Sold: ${context.parsed.y}`;
+                                      },
+                                      afterLabel: function(context) {
+                                        const revenue = analytics.genreBreakdown[context.dataIndex].revenue;
+                                        return `Revenue: ₹${revenue.toFixed(2)}`;
+                                      }
+                                    }
+                                  }
+                                },
+                                scales: {
+                                  y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                      stepSize: 1,
+                                    }
+                                  }
+                                }
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 text-center py-8">No genre data available</p>
+                    )}
+                  </>
                 )}
               </div>
             </div>
           )}
 
-          {activeTab === 'buyers' && analytics && (
+          {activeTab === 'buyers' && (
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <h2 className="text-xl font-bold text-gray-900 mb-6">Recent Buyer Interactions</h2>
-              {analytics.buyerInteractions && analytics.buyerInteractions.length > 0 ? (
+              {(loading || (tabLoading && activeTab === 'buyers')) ? (
                 <div className="space-y-4">
-                  {analytics.buyerInteractions.map((interaction, index) => (
-                    <div key={index} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                          <div className="bg-purple-100 rounded-full w-10 h-10 flex items-center justify-center">
-                            <i className="fas fa-user text-purple-600"></i>
-                          </div>
-                          <div>
-                            <p className="font-semibold text-gray-900">{interaction.buyer.name}</p>
-                            <p className="text-sm text-gray-500">{interaction.buyer.email}</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-bold text-purple-600">₹{interaction.totalAmount.toFixed(2)}</p>
-                          <p className="text-xs text-gray-500">
-                            {new Date(interaction.orderDate).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex justify-between items-center ">
-                        <div className="flex items-center gap-2 text-sm text-gray-700">
-                          <i className="fas fa-book text-purple-500"></i>
-                          <span>
-                            {interaction.books.length === 1 
-                              ? interaction.books[0]
-                              : `${interaction.books[0]} +${interaction.books.length - 1} more`
-                            }
-                          </span>
-                        </div>  
-                        <div>
-                          <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
-                            interaction.status === 'completed' ? 'bg-green-100 text-green-700' :
-                            interaction.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-gray-100 text-gray-700'
-                          }`}>
-                            {interaction.status}
-                          </span>
-                        </div>
-                      </div>                  
-                    </div>
-                  ))}
+                  <SkeletonListItem />
+                  <SkeletonListItem />
+                  <SkeletonListItem />
                 </div>
               ) : (
-                <p className="text-gray-500 text-center py-8">No buyer interactions yet</p>
+                <>
+                  {analytics && analytics.buyerInteractions && analytics.buyerInteractions.length > 0 ? (
+                    <div className="space-y-4">
+                      {analytics.buyerInteractions.map((interaction, index) => (
+                        <div key={index} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-center gap-3">
+                              <div className="bg-purple-100 rounded-full w-10 h-10 flex items-center justify-center">
+                                <i className="fas fa-user text-purple-600"></i>
+                              </div>
+                              <div>
+                                <p className="font-semibold text-gray-900">{interaction.buyer.name}</p>
+                                <p className="text-sm text-gray-500">{interaction.buyer.email}</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-bold text-purple-600">₹{interaction.totalAmount.toFixed(2)}</p>
+                              <p className="text-xs text-gray-500">
+                                {new Date(interaction.orderDate).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <div className="flex justify-between items-center ">
+                            <div className="flex items-center gap-2 text-sm text-gray-700">
+                              <i className="fas fa-book text-purple-500"></i>
+                              <span>
+                                {interaction.books.length === 1 
+                                  ? interaction.books[0]
+                                  : `${interaction.books[0]} +${interaction.books.length - 1} more`
+                                }
+                              </span>
+                            </div>  
+                            <div>
+                              <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
+                                interaction.status === 'completed' ? 'bg-green-100 text-green-700' :
+                                interaction.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-gray-100 text-gray-700'
+                              }`}>
+                                {interaction.status}
+                              </span>
+                            </div>
+                          </div>                  
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 text-center py-8">No buyer interactions yet</p>
+                  )}
+                </>
               )}
             </div>
           )}
