@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 
 const Footer = () => {
@@ -56,14 +55,14 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-purple-400 transition-colors">
+                <Link to="#" className="hover:text-purple-400 transition-colors">
                   FAQs
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-purple-400 transition-colors">
+                <Link to="#" className="hover:text-purple-400 transition-colors">
                   Shipping Info
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -72,18 +71,18 @@ const Footer = () => {
           <div>
             <h3 className="text-white text-lg font-semibold mb-4">Follow Us</h3>
             <div className="flex space-x-4">
-              <a href="#" className="hover:text-purple-400 transition-colors">
+              <Link to="#" className="hover:text-purple-400 transition-colors">
                 <i className="fab fa-facebook text-xl"></i>
-              </a>
-              <a href="#" className="hover:text-purple-400 transition-colors">
+              </Link>
+              <Link to="#" className="hover:text-purple-400 transition-colors">
                 <i className="fab fa-twitter text-xl"></i>
-              </a>
-              <a href="#" className="hover:text-purple-400 transition-colors">
+              </Link>
+              <Link to="#" className="hover:text-purple-400 transition-colors">
                 <i className="fab fa-instagram text-xl"></i>
-              </a>
-              <a href="#" className="hover:text-purple-400 transition-colors">
+              </Link>
+              <Link to="#" className="hover:text-purple-400 transition-colors">
                 <i className="fab fa-linkedin text-xl"></i>
-              </a>
+              </Link>
             </div>
           </div>
         </div>

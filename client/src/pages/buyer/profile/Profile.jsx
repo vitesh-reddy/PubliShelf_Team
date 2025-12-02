@@ -11,26 +11,9 @@ import { clearCart } from '../../../store/slices/cartSlice';
 import { clearWishlist } from '../../../store/slices/wishlistSlice';
 import { useUser, useWishlist } from '../../../store/hooks';
 import { logout } from "../../../services/auth.services";
-// Navbar and Footer are now provided by BuyerLayout
 import { useForm } from "react-hook-form";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "../../../components/ui/AlertDialog";
-import {
-  firstnameRules,
-  lastnameRules,
-  emailRules,
-  currentPasswordRules,
-  newPasswordRules,
-  confirmPasswordRules
-} from './profileValidation';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../../../components/ui/AlertDialog";
+import { firstnameRules, lastnameRules, emailRules, currentPasswordRules, newPasswordRules, confirmPasswordRules } from './profileValidation';
 
 const BuyerProfile = () => {
   const dispatch = useDispatch();

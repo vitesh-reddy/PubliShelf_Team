@@ -8,8 +8,6 @@ import AuctionCountdownCard from "./components/AuctionCountdownCard.jsx";
 import AuctionActivityFeed from "./components/AuctionActivityFeed.jsx";
 import ShelfViewToggle from "./components/ShelfViewToggle.jsx";
 import ShelfView from "./components/ShelfView.jsx";
-// Navbar and Footer are provided by BuyerLayout
-// Font Awesome icons imported via CDN in index.html
 
 const Dashboard = () => {
   const [data, setData] = useState({ 
@@ -23,7 +21,7 @@ const Dashboard = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'shelf'
+  const [viewMode, setViewMode] = useState('grid');
   const navigate = useNavigate();
 
   useEffect(() => {

@@ -5,9 +5,9 @@ import debounce from "lodash-es/debounce";
 
 const SearchAutocomplete = ({
   initialQuery = "",
-  variant = "desktop", // 'desktop' | 'mobile'
-  isOpen = true, // used for mobile; desktop is always shown
-  onClose, // used to close the mobile dropdown on select/submit
+  variant = "desktop", 
+  isOpen = true,
+  onClose, 
 }) => {
   const navigate = useNavigate();
 

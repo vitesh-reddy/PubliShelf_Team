@@ -185,7 +185,7 @@ const AuctionPage = () => {
                             </div>
                           </div>
                           <button
-                            onClick={() => (window.location.href = `/buyer/auction-item-detail/${book._id}`)}
+                            onClick={() => navigate(`/buyer/auction-item-detail/${book._id}`)}
                             className="mt-4 mb-1 w-full bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
                           >
                             View Auction
@@ -242,7 +242,7 @@ const AuctionPage = () => {
                             </div>
                           </div>
                           <button
-                            onClick={() => (window.location.href = `/buyer/auction-item-detail/${book._id}`)}
+                            onClick={() => navigate(`/buyer/auction-item-detail/${book._id}`)}
                             className="mt-4 mb-1 w-full bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
                           >
                             View Details
@@ -301,7 +301,7 @@ const AuctionPage = () => {
                             </div>
                           </div>
                           <button
-                            onClick={() => (window.location.href = `/buyer/auction-item-detail/${book._id}`)}
+                            onClick={() => navigate(`/buyer/auction-item-detail/${book._id}`)}
                             className="mt-4 mb-1 w-full bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
                           >
                             View Details
