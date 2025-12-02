@@ -106,12 +106,12 @@ const SearchPage = () => {
     if (exist) {
       dispatch(removeFromWishlistThunk(id))
         .unwrap()
-        .then(() => toast.success("Removed"))
+        .then(() => toast.success("Removed from Wishlisted"))
         .catch(() => toast.error("Failed"));
     } else {
       dispatch(addToWishlistThunk({ bookId: id, book: books.find(b => b._id === id) }))
         .unwrap()
-        .then(() => toast.success("Added"))
+        .then(() => toast.success("Added to Wishlist"))
         .catch(() => toast.error("Failed"));
     }
   };
