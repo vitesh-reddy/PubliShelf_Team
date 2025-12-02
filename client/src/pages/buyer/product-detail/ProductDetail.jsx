@@ -1,15 +1,60 @@
-//client/src/pages/buyer/product-detail/ProductDetail.jsx
+// client/src/pages/buyer/product-detail/ProductDetail.jsx
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { FaHeart, FaShoppingCart } from "react-icons/fa";
 import { toast } from "sonner";
 import { getProductDetail } from "../../../services/buyer.services.js";
 import { useDispatch } from 'react-redux';
 import { addToCartThunk } from '../../../store/slices/cartSlice';
 import { addToWishlistThunk, removeFromWishlistThunk } from '../../../store/slices/wishlistSlice';
 import { useCart, useWishlist } from '../../../store/hooks';
-// Navbar and Footer are provided by BuyerLayout
 import StarRating from "../components/StarRating.jsx";
+
+// Skeleton components
+const SkeletonDetail = () => (
+  <div className="animate-fade-in flex flex-col md:flex-row gap-8 p-8 bg-white rounded-xl shadow-lg skeleton-shimmer">
+    <div className="w-full md:w-1/2 h-[600px] bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-lg"></div>
+    <div className="flex-1 space-y-4">
+      <div className="h-8 w-3/4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded"></div>
+      <div className="h-6 w-1/2 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded"></div>
+      <div className="h-6 w-1/4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded"></div>
+      <div className="h-6 w-1/3 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded mt-4"></div>
+      <div className="h-12 w-full bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded mt-2"></div>
+      <div className="flex space-x-4">
+        <div className="h-12 w-1/2 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded"></div>
+        <div className="h-12 w-1/2 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded"></div>
+      </div>
+      <div className="h-40 w-full bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded mt-4"></div>
+    </div>
+  </div>
+);
+
+const SkeletonReview = () => (
+  <div className="animate-fade-in flex items-start gap-4 p-6 bg-white rounded-xl shadow-lg skeleton-shimmer mb-6">
+    <div className="w-12 h-12 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-full"></div>
+    <div className="flex-1 space-y-2">
+      <div className="h-4 w-1/3 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded"></div>
+      <div className="h-3 w-1/4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded"></div>
+      <div className="h-6 w-full bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded"></div>
+    </div>
+  </div>
+);
+
+const SkeletonCard = () => (
+  <div className="bg-white rounded-xl shadow-md overflow-hidden skeleton-shimmer animate-fade-in">
+    <div className="w-full h-40 md:h-64 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200" />
+    <div className="p-4 space-y-3">
+      <div className="h-4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-3/4" />
+      <div className="h-3 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-1/2" />
+      <div className="flex justify-between items-center pt-2">
+        <div className="space-y-2">
+          <div className="h-4 w-16 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded" />
+          <div className="h-3 w-20 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded" />
+        </div>
+        <div className="h-7 w-7 rounded-full bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200" />
+      </div>
+    </div>
+  </div>
+);
 
 const ProductDetail = () => {
   const dispatch = useDispatch();
@@ -23,7 +68,6 @@ const ProductDetail = () => {
   const [error, setError] = useState("");
   const navigate = useNavigate();
   
-  // Check if book is in cart/wishlist from Redux store
   const isInCart = cartItems.some(item => item.book?._id === id);
   const isInWishlist = wishlistItems.some(item => item._id === id);
 
@@ -52,12 +96,10 @@ const ProductDetail = () => {
       toast.error("This book is out of stock!");
       return;
     }
-    
     if (isInCart) {
       toast.info("Book is already in your cart!");
       return;
     }
-
     dispatch(addToCartThunk({ bookId: id, quantity: 1, book }))
       .unwrap()
       .then(() => toast.success('Book added to cart successfully!'))
@@ -83,7 +125,24 @@ const ProductDetail = () => {
       .catch((e) => toast.error(typeof e === 'string' ? e : 'Failed to add to wishlist'));
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center space-y-8 p-4">
+        <SkeletonDetail />
+        <div className="w-full max-w-7xl">
+          <h3 className="text-2xl font-bold mb-4">Customer Reviews</h3>
+          {Array.from({ length: 3 }).map((_, idx) => <SkeletonReview key={`rev-${idx}`} />)}
+        </div>
+        <div className="w-full max-w-7xl">
+          <h3 className="text-2xl font-bold mb-4">You May Also Like</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {Array.from({ length: 4 }).map((_, idx) => <SkeletonCard key={`sim-${idx}`} />)}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (error) return <div className="min-h-screen flex items-center justify-center text-red-500">{error}</div>;
   if (!book) return <div className="min-h-screen flex items-center justify-center">Book not found</div>;
 
@@ -97,7 +156,7 @@ const ProductDetail = () => {
             <ol className="inline-flex items-center space-x-1 md:space-x-3">
               <li className="inline-flex items-center">
                 <Link to="/buyer/dashboard" className="text-gray-700 hover:text-purple-600">
-                <i className="fas fa-home mr-2"></i>
+                  <i className="fas fa-home mr-2"></i>
                   Home
                 </Link>
               </li>
@@ -170,7 +229,6 @@ const ProductDetail = () => {
 
                 <div className="space-y-4">
                   <div className="flex items-center space-x-4">
-                    <div className="flex items-center border rounded-lg"></div>
                     {book.quantity > 0 ? (
                       <Link
                         to="/buyer/cart"
@@ -187,6 +245,7 @@ const ProductDetail = () => {
                       </button>
                     )}
                   </div>
+
                   <div className="grid grid-cols-2 gap-4">
                     <div className="relative grid grid-cols-2 gap-4">
                       {book.quantity <= 0 ? (
@@ -286,44 +345,42 @@ const ProductDetail = () => {
               {similarBooks.map((sBook) => {
                 const sInWishlist = wishlistItems.some(item => item._id === sBook._id);
                 return (
-                <div
-                  key={sBook._id}
-                  className="relative bg-white rounded-lg shadow-md overflow-hidden hover:-translate-y-1 transition-transform cursor-pointer"
-                  onClick={() => navigate(`/buyer/product-detail/${sBook._id}`)}
-                >
-                  <div className="relative w-full h-40 md:h-64 bg-gray-100 flex items-center justify-center">
-                    <img
-                      src={sBook.image}
-                      alt={sBook.title}
-                      className="max-w-full max-h-full object-contain"
-                    />
-                  </div>
-
-                  <div className="p-3 md:p-4">
-                    <h3 className="text-lg font-semibold mb-1 truncate">{sBook.title}</h3>
-                    <p className="text-gray-600 text-sm mb-2">by {sBook.author}</p>
-
-                    <div className="flex justify-between items-center">
-                      <span className="font-bold text-purple-600 text-sm">₹{sBook.price}</span>
+                  <div
+                    key={sBook._id}
+                    className="relative bg-white rounded-lg shadow-md overflow-hidden hover:-translate-y-1 transition-transform cursor-pointer"
+                    onClick={() => navigate(`/buyer/product-detail/${sBook._id}`)}
+                  >
+                    <div className="relative w-full h-40 md:h-64 bg-gray-100 flex items-center justify-center">
+                      <img
+                        src={sBook.image}
+                        alt={sBook.title}
+                        className="max-w-full max-h-full object-contain"
+                      />
                     </div>
 
-                    <button
-                      className="absolute bottom-3 right-3 wishlist-btn text-gray-600 hover:text-red-500"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleToggleWishlist(sBook);
-                      }}
-                    >
-                      <i className={`${sInWishlist ? 'fas text-red-500' : 'far text-gray-600'} fa-heart text-xl`}></i>
-                    </button>
+                    <div className="p-3 md:p-4">
+                      <h3 className="text-lg font-semibold mb-1 truncate">{sBook.title}</h3>
+                      <p className="text-gray-500 text-sm truncate">{sBook.author}</p>
+                      <div className="mt-2 flex items-center justify-between">
+                        <span className="font-semibold text-gray-900">₹{sBook.price}</span>
+                        <button
+                          className={`text-xl transition-colors ${
+                            sInWishlist ? 'text-red-500' : 'text-purple-600 hover:text-red-500'
+                          }`}
+                          onClick={(e) => { e.stopPropagation(); handleToggleWishlist(sBook); }}
+                        >
+                          {sInWishlist ? <i className="fas fa-heart"></i> : <i className="far fa-heart"></i>}
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              );})}
+                );
+              })}
             </div>
           </div>
+
         </div>
       </div>
-
     </div>
   );
 };
