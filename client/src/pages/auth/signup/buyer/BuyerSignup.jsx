@@ -1,10 +1,12 @@
 //client/src/pages/auth/signup/buyer/BuyerSignup.jsx
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
+import { useNavigate, Link } from "react-router-dom";
 import { signupBuyer } from "../../../../services/buyer.services.js";
 import { AuthHeader, TextInput, PasswordField, PasswordStrengthMeter, TermsCheckbox, NameFields, ConfirmPasswordField } from '../../components';
 
 const BuyerSignup = () => {
+  const navigate = useNavigate();
   const { register, handleSubmit, watch, trigger, formState: { errors } } = useForm({ mode: 'onBlur' });
   const [serverError, setServerError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -23,7 +25,7 @@ const BuyerSignup = () => {
         password,
       });
       if (response.success) {
-        window.location.href = '/auth/login';
+        navigate('/auth/login');
       } else {
         setServerError(response.message || 'An unexpected error occurred.');
       }
@@ -40,7 +42,7 @@ const BuyerSignup = () => {
       <div className="max-w-md w-full">
         <AuthHeader
           title="Create Buyer Account"
-          subtitle={<span>Already have an account? <a href="/auth/login" className="font-medium text-purple-600 hover:text-purple-500">Sign in</a></span>}
+          subtitle={<span>Already have an account? <Link to="/auth/login" className="font-medium text-purple-600 hover:text-purple-500">Sign in</Link></span>}
         />
 
         <form id="signupForm" onSubmit={handleSubmit(onSubmit)}>

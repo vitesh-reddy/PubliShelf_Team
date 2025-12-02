@@ -1,7 +1,7 @@
 //client/src/pages/auth/signup/publisher/PublisherSignup.jsx
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { signupPublisher } from "../../../../services/publisher.services.js";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle} from "../../../../components/ui/AlertDialog";
 import { AuthHeader, TextInput, PasswordField, PasswordStrengthMeter, TermsCheckbox, NameFields, ConfirmPasswordField } from '../../components';
@@ -45,7 +45,7 @@ const PublisherSignup = () => {
       <div className="max-w-md w-full">
         <AuthHeader
           title="Create Publisher Account"
-          subtitle={<span>Already have an account? <a href="/auth/login" className="text-purple-600 hover:text-purple-500 font-medium">Sign in</a></span>}
+          subtitle={<span>Already have an account? <Link to="/auth/login" className="text-purple-600 hover:text-purple-500 font-medium">Sign in</Link></span>}
         />
 
         <form id="signupForm" onSubmit={handleSubmit(onSubmit)}>
