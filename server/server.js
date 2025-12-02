@@ -43,8 +43,10 @@ app.use("/api/auth", authRoutes);
 
 // Home data API endpoint for landing page
 app.get("/api/home/data", async (req, res) => {
-  try {
-    const newlyBooks = await Book.find().sort({ publishedAt: -1 }).limit(8);
+  try {    
+    const newlyBooks = await Book.find({ isDeleted: { $ne: true } })
+      .sort({ publishedAt: -1 })
+      .limit(8);
     const mostSoldBooks = await getTopSoldBooks();
     const trendingBooks = await getTrendingBooks();
     const metrics = await getMetrics();
