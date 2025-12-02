@@ -105,10 +105,34 @@ const AuctionOverview = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <i className="fas fa-spinner fa-spin text-4xl text-purple-600 mb-4"></i>
-          <p className="text-gray-600">Loading auction details...</p>
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-5xl mx-auto px-4">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden skeleton-shimmer animate-fade-in">
+            <div className="flex flex-col lg:flex-row gap-8 p-8">
+              {/* Image skeleton */}
+              <div className="flex-shrink-0">
+                <div className="w-full lg:w-80 h-96 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-lg"></div>
+              </div>
+              {/* Content skeleton */}
+              <div className="flex-1 space-y-4">
+                <div className="h-8 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-3/4"></div>
+                <div className="h-5 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-1/2"></div>
+                <div className="space-y-3 pt-4">
+                  <div className="h-4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-full"></div>
+                  <div className="h-4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-5/6"></div>
+                  <div className="h-4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-4/5"></div>
+                </div>
+                <div className="grid grid-cols-2 gap-4 pt-4">
+                  <div className="h-24 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-lg"></div>
+                  <div className="h-24 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-lg"></div>
+                </div>
+                <div className="flex gap-3 pt-6">
+                  <div className="h-10 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-lg flex-1"></div>
+                  <div className="h-10 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-lg flex-1"></div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );

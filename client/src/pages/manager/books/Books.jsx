@@ -1,6 +1,7 @@
 // client/src/pages/manager/books/Books.jsx
 import React, { useState, useEffect } from "react";
 import { getPendingBooks, getApprovedBooks, getRejectedBooks, approveBook, rejectBook, flagBook } from "../../../services/manager.services";
+import Pagination from "../../../components/ui/Pagination";
 
 const Books = ({ type = 'pending' }) => {
   const [books, setBooks] = useState([]);
@@ -12,6 +13,9 @@ const Books = ({ type = 'pending' }) => {
   const [selectedBook, setSelectedBook] = useState(null);
   const [actionType, setActionType] = useState("");
   const [actionReason, setActionReason] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageLoading, setPageLoading] = useState(false);
+  const ITEMS_PER_PAGE = 9;
 
   const loadBooks = async () => {
     setLoading(true);
@@ -65,6 +69,26 @@ const Books = ({ type = 'pending' }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [books, searchQuery, genreFilter]);
 
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [type, searchQuery, genreFilter]);
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredBooks.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedBooks = filteredBooks.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  const handlePageChange = (page) => {
+    setPageLoading(true);
+    const delay = Math.floor(Math.random() * 300) + 300;
+    setTimeout(() => {
+      setCurrentPage(page);
+      setPageLoading(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, delay);
+  };
+
   const handleAction = (book, action) => {
     setSelectedBook(book);
     setActionType(action);
@@ -98,10 +122,31 @@ const Books = ({ type = 'pending' }) => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <i className="fas fa-spinner fa-spin text-4xl text-purple-600 mb-4"></i>
-          <p className="text-gray-600">Loading books...</p>
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 9 }).map((_, idx) => (
+            <div key={idx} className="bg-white border border-gray-200 rounded-lg overflow-hidden skeleton-shimmer animate-fade-in">
+              {/* Image skeleton */}
+              <div className="h-48 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200"></div>
+              {/* Content skeleton */}
+              <div className="p-4 space-y-3">
+                <div className="h-6 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-3/4"></div>
+                <div className="h-4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-1/2"></div>
+                <div className="flex items-center gap-2">
+                  <div className="h-5 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-16"></div>
+                  <div className="h-5 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-12"></div>
+                </div>
+                <div className="space-y-2">
+                  <div className="h-3 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-full"></div>
+                  <div className="h-3 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-2/3"></div>
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <div className="h-9 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-lg flex-1"></div>
+                  <div className="h-9 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-lg flex-1"></div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -151,8 +196,37 @@ const Books = ({ type = 'pending' }) => {
           <p className="text-gray-500 text-lg">No {type} books found</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredBooks.map((book) => (
+        <>
+          {/* Skeleton Loading State for Pagination */}
+          {pageLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array.from({ length: ITEMS_PER_PAGE }).map((_, idx) => (
+                <div key={idx} className="bg-white border border-gray-200 rounded-lg overflow-hidden skeleton-shimmer animate-fade-in">
+                  {/* Image skeleton */}
+                  <div className="h-48 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200"></div>
+                  {/* Content skeleton */}
+                  <div className="p-4 space-y-3">
+                    <div className="h-6 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-3/4"></div>
+                    <div className="h-4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-1/2"></div>
+                    <div className="flex items-center gap-2">
+                      <div className="h-5 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-16"></div>
+                      <div className="h-5 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-12"></div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="h-3 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-full"></div>
+                      <div className="h-3 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-2/3"></div>
+                    </div>
+                    <div className="flex gap-2 pt-2">
+                      <div className="h-9 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-lg flex-1"></div>
+                      <div className="h-9 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-lg flex-1"></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {paginatedBooks.map((book) => (
             <div key={book._id} className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
               <div className="h-48 bg-gray-200 relative">
                 {book.image ? (
@@ -243,6 +317,17 @@ const Books = ({ type = 'pending' }) => {
             </div>
           ))}
         </div>
+          )}
+          
+          {/* Pagination */}
+          {filteredBooks.length > ITEMS_PER_PAGE && !pageLoading && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
+          )}
+        </>
       )}
 
       {/* Action Modal */}

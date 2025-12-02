@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getPendingAuctions, getApprovedAuctions, getRejectedAuctions } from "../../../services/manager.services";
+import Pagination from "../../../components/ui/Pagination";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -17,6 +18,11 @@ const Auctions = ({ type = 'pending' }) => {
   const [auctions, setAuctions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [rejectionDialog, setRejectionDialog] = useState({ open: false, reason: '' });
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageLoading, setPageLoading] = useState(false);
+  const ITEMS_PER_PAGE = 6; // 3 rows × 2 cols
 
   const loadAuctions = async () => {
     setLoading(true);
@@ -45,6 +51,26 @@ const Auctions = ({ type = 'pending' }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [type]);
 
+  // Reset page when type changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [type]);
+
+  // Pagination logic
+  const totalPages = Math.ceil(auctions.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedAuctions = auctions.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  const handlePageChange = (page) => {
+    setPageLoading(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const delay = Math.floor(Math.random() * 300) + 300; // 300-600ms delay
+    setTimeout(() => {
+      setCurrentPage(page);
+      setPageLoading(false);
+    }, delay);
+  };
+
   const norm = (a) => ({
     id: a._id,
     image: a.image || a.itemImage,
@@ -63,10 +89,40 @@ const Auctions = ({ type = 'pending' }) => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <i className="fas fa-spinner fa-spin text-4xl text-purple-600 mb-4"></i>
-          <p className="text-gray-600">Loading auctions...</p>
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {Array.from({ length: 6 }).map((_, idx) => (
+            <div key={idx} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden h-[380px] skeleton-shimmer animate-fade-in">
+              <div className="flex gap-6 p-6 h-full">
+                {/* Image skeleton */}
+                <div className="flex-shrink-0">
+                  <div className="w-40 h-56 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-lg"></div>
+                </div>
+                {/* Content skeleton */}
+                <div className="flex-1 min-w-0 flex flex-col space-y-3">
+                  <div className="h-6 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-3/4"></div>
+                  <div className="h-4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-1/2"></div>
+                  <div className="flex items-center gap-3">
+                    <div className="h-5 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-full w-20"></div>
+                    <div className="h-4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-16"></div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-full"></div>
+                    <div className="h-4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-5/6"></div>
+                    <div className="h-6 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-1/2"></div>
+                  </div>
+                  <div className="border-t border-gray-200 pt-3">
+                    <div className="h-3 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-3/4 mb-2"></div>
+                    <div className="h-3 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-2/3"></div>
+                  </div>
+                  <div className="mt-auto flex gap-2 pt-2">
+                    <div className="h-9 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-lg flex-1"></div>
+                    <div className="h-9 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-lg flex-1"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -80,8 +136,44 @@ const Auctions = ({ type = 'pending' }) => {
           <p className="text-gray-500 text-lg">No {type} auctions found</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {auctions.map((raw) => {
+        <>
+          {/* Skeleton Loading State for Pagination */}
+          {pageLoading ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {Array.from({ length: ITEMS_PER_PAGE }).map((_, idx) => (
+                <div key={idx} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden h-[380px] skeleton-shimmer animate-fade-in">
+                  <div className="flex gap-6 p-6 h-full">
+                    <div className="flex-shrink-0">
+                      <div className="w-40 h-56 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-lg"></div>
+                    </div>
+                    <div className="flex-1 min-w-0 flex flex-col space-y-3">
+                      <div className="h-6 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-3/4"></div>
+                      <div className="h-4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-1/2"></div>
+                      <div className="flex items-center gap-3">
+                        <div className="h-5 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-full w-20"></div>
+                        <div className="h-4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-16"></div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="h-4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-full"></div>
+                        <div className="h-4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-5/6"></div>
+                        <div className="h-6 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-1/2"></div>
+                      </div>
+                      <div className="border-t border-gray-200 pt-3">
+                        <div className="h-3 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-3/4 mb-2"></div>
+                        <div className="h-3 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-2/3"></div>
+                      </div>
+                      <div className="mt-auto flex gap-2 pt-2">
+                        <div className="h-9 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-lg flex-1"></div>
+                        <div className="h-9 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-lg flex-1"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {paginatedAuctions.map((raw) => {
             const auction = norm(raw);
             return (
               <div
@@ -201,6 +293,17 @@ const Auctions = ({ type = 'pending' }) => {
             );
           })}
         </div>
+          )}
+          
+          {/* Pagination */}
+          {auctions.length > ITEMS_PER_PAGE && !pageLoading && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
+          )}
+        </>
       )}
 
       {/* Rejection Reason Dialog */}
