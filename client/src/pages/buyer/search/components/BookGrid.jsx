@@ -8,7 +8,7 @@ const BookGrid = ({ books, onWishlistAdd }) => {
   const navigate = useNavigate();
 
   return (
-    <div id="bookGrid" className="grid grid-cols-2 md:grid-cols-4 gap-6">
+    <div id="bookGrid" className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
       {books.length === 0 ? (
         <div className="col-span-full text-center text-gray-500 py-10">
           No books found for selected filters.

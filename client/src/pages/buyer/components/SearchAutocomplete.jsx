@@ -10,8 +10,12 @@ const SearchAutocomplete = ({
   onClose, 
 }) => {
   const navigate = useNavigate();
-
   const [query, setQuery] = useState(initialQuery);
+
+  useEffect(() => {
+    setQuery(initialQuery || "");
+  }, [initialQuery]);
+
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [loading, setLoading] = useState(false);
