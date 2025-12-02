@@ -69,7 +69,7 @@ const Books = ({ type = 'pending' }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [books, searchQuery, genreFilter]);
 
-  // Reset to page 1 when filters change
+  // Reset page when type or filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [type, searchQuery, genreFilter]);
@@ -77,15 +77,15 @@ const Books = ({ type = 'pending' }) => {
   // Pagination logic
   const totalPages = Math.ceil(filteredBooks.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedBooks = filteredBooks.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const paginatedFilteredBooks = filteredBooks.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   const handlePageChange = (page) => {
     setPageLoading(true);
-    const delay = Math.floor(Math.random() * 300) + 300;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const delay = Math.floor(Math.random() * 800) + 200; // 300-600ms delay
     setTimeout(() => {
       setCurrentPage(page);
       setPageLoading(false);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     }, delay);
   };
 
@@ -197,7 +197,7 @@ const Books = ({ type = 'pending' }) => {
         </div>
       ) : (
         <>
-          {/* Skeleton Loading State for Pagination */}
+          {/* Skeleton Loading State */}
           {pageLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {Array.from({ length: ITEMS_PER_PAGE }).map((_, idx) => (
@@ -315,8 +315,8 @@ const Books = ({ type = 'pending' }) => {
                 </div>
               </div>
             </div>
-          ))}
-        </div>
+              ))}
+            </div>
           )}
           
           {/* Pagination */}

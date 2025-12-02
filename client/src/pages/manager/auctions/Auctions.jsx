@@ -50,8 +50,7 @@ const Auctions = ({ type = 'pending' }) => {
     loadAuctions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [type]);
-
-  // Reset page when type changes
+  
   useEffect(() => {
     setCurrentPage(1);
   }, [type]);
@@ -64,7 +63,7 @@ const Auctions = ({ type = 'pending' }) => {
   const handlePageChange = (page) => {
     setPageLoading(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    const delay = Math.floor(Math.random() * 300) + 300; // 300-600ms delay
+    const delay = Math.floor(Math.random() * 800) + 200; // 300-600ms delay
     setTimeout(() => {
       setCurrentPage(page);
       setPageLoading(false);
@@ -137,7 +136,7 @@ const Auctions = ({ type = 'pending' }) => {
         </div>
       ) : (
         <>
-          {/* Skeleton Loading State for Pagination */}
+          {/* Skeleton Loading State */}
           {pageLoading ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {Array.from({ length: ITEMS_PER_PAGE }).map((_, idx) => (
@@ -291,10 +290,10 @@ const Auctions = ({ type = 'pending' }) => {
                 </div>
               </div>
             );
-          })}
-        </div>
+            })}
+            </div>
           )}
-          
+
           {/* Pagination */}
           {auctions.length > ITEMS_PER_PAGE && !pageLoading && (
             <Pagination

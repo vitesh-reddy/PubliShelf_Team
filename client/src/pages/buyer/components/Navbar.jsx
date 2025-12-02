@@ -14,7 +14,8 @@ const Navbar = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
-  const q = useSearchParams()[0].get("q");
+  const [searchParams] = useSearchParams();
+  const q = searchParams.get("q");
 
   const user = useUser();
   const { items: cartItems } = useCart();

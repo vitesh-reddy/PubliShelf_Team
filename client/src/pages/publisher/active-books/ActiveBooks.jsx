@@ -13,6 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../../../components/ui/AlertDialog";
+import Pagination from "../../../components/Pagination.jsx";
 
 const ActiveBooks = () => {
   const [user, setUser] = useState({ firstname: "", lastname: "" });
@@ -22,7 +23,11 @@ const ActiveBooks = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedBook, setSelectedBook] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageLoading, setPageLoading] = useState(false);
   const navigate = useNavigate();
+
+  const ROWS_PER_PAGE = 8;
 
   useEffect(() => {
     loadBooks();
@@ -76,6 +81,23 @@ const ActiveBooks = () => {
     navigate(`/publisher/view-book/${bookId}`);
   };
 
+  const handlePageChange = (page) => {
+    setPageLoading(true);
+    // Simulate small random loading delay (200-800ms)
+    const delay = Math.floor(Math.random() * 600) + 200;
+    setTimeout(() => {
+      setCurrentPage(page);
+      setPageLoading(false);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }, delay);
+  };
+
+  // Compute current page books
+  const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
+  const endIndex = startIndex + ROWS_PER_PAGE;
+  const currentBooks = books.slice(startIndex, endIndex);
+  const totalPages = Math.ceil(books.length / ROWS_PER_PAGE);
+
   if (loading) {
     return (
       <div className="bg-gray-50 min-h-screen">
@@ -109,9 +131,13 @@ const ActiveBooks = () => {
           </div>
 
           {/* Books Grid */}
-          {books.length > 0 ? (
+          {pageLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <i className="fas fa-spinner fa-spin text-4xl text-purple-600"></i>
+            </div>
+          ) : currentBooks.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {books.map((book) => (
+              {currentBooks.map((book) => (
                 <div
                   key={book._id}
                   className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden transform transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
@@ -201,6 +227,15 @@ const ActiveBooks = () => {
                 Publish New Book
               </Link>
             </div>
+          )}
+
+          {/* Pagination */}
+          {books.length > ROWS_PER_PAGE && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
           )}
         </div>
       </div>

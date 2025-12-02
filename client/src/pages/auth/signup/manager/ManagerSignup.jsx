@@ -1,10 +1,13 @@
 //client/src/pages/auth/signup/manager/ManagerSignup.jsx
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
+import { useNavigate, Link } from "react-router-dom";
 import { signupManager } from "../../../../services/manager.services.js";
 import { AuthHeader, NameFields, TextInput, PasswordField, PasswordStrengthMeter, ConfirmPasswordField, TermsCheckbox } from '../../components';
 
 const ManagerSignup = () => {
+  const navigate = useNavigate();
+
   const {
     register,
     handleSubmit,
@@ -31,7 +34,7 @@ const ManagerSignup = () => {
       const response = await signupManager({ firstname, lastname, email, password });
 
       if (response.success) {
-        window.location.href = "/auth/login";
+        navigate("/auth/login");
       } else {
         setServerError(response.message || "An unexpected error occurred.");
       }
@@ -49,7 +52,7 @@ const ManagerSignup = () => {
 
         <AuthHeader
           title="Create Manager Account"
-          subtitle={<span>Already have an account? <a href="/auth/login" className="font-medium text-purple-600 hover:text-purple-500">Sign in</a></span>}
+          subtitle={<span>Already have an account? <Link to="/auth/login" className="font-medium text-purple-600 hover:text-purple-500">Sign in</Link></span>}
         />
 
         {/* Form */}

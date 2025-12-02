@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 export const TermsCheckbox = ({ name='termsAccepted', register, rules, error, onBlurTrigger }) => {
   return (
     <div className="flex items-center relative">
@@ -10,9 +12,9 @@ export const TermsCheckbox = ({ name='termsAccepted', register, rules, error, on
       />
       <label htmlFor={name} className="ml-2 block text-sm text-gray-700">
         I agree to the{' '}
-        <a href="#" className="text-purple-600 hover:text-purple-500">Terms of Service</a>{' '}
+        <Link to="#" className="text-purple-600 hover:text-purple-500">Terms of Service</Link>
         and{' '}
-        <a href="#" className="text-purple-600 hover:text-purple-500">Privacy Policy</a>
+        <Link to="#" className="text-purple-600 hover:text-purple-500">Privacy Policy</Link>
       </label>
       {error && <p className="absolute -bottom-4 inset-x-0 text-red-500 text-xs">{error.message}</p>}
     </div>

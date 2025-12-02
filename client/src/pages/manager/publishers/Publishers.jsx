@@ -87,7 +87,7 @@ const Publishers = ({ type = 'pending' }) => {
   const handlePageChange = (page) => {
     setPageLoading(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    const delay = Math.floor(Math.random() * 300) + 300; // 300-600ms delay
+    const delay = Math.floor(Math.random() * 800) + 200; // 300-600ms delay
     setTimeout(() => {
       setCurrentPage(page);
       setPageLoading(false);

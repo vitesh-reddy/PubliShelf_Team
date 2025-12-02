@@ -1,4 +1,3 @@
-//client/src/pages/auth/login/Login.jsx
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { login } from "../../../services/auth.services.js";
@@ -7,11 +6,12 @@ import { setAuth } from "../../../store/slices/authSlice";
 import { setUser } from "../../../store/slices/userSlice";
 import { setCart } from "../../../store/slices/cartSlice";
 import { setWishlist } from "../../../store/slices/wishlistSlice";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogAction } from "../../../components/ui/AlertDialog";
 import { AuthHeader, TextInput, PasswordField, ErrorMessage } from '../components';
 import { emailRules, passwordRules } from '../validations';
+import Pagination from "../../../components/Pagination.jsx"; // Pagination component
 
 const Login = () => {
   const dispatch = useDispatch();
@@ -19,7 +19,6 @@ const Login = () => {
 
   const { register, handleSubmit, trigger, formState: { errors } } = useForm({ mode: 'onBlur' });
 
-  // Removed individual watch usages after modularization
   const [rememberMe, setRememberMe] = useState(false);
   const [serverError, setServerError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -32,11 +31,34 @@ const Login = () => {
     type: ""
   });
 
+  /* ------------------- Pagination State ------------------- */
+  const allItems = []; // replace with actual data list
+  const rowsPerPage = 5;
+  const [currentPage, setCurrentPage] = useState(1);
+  const [paginatedItems, setPaginatedItems] = useState([]);
+  const [pageLoading, setPageLoading] = useState(false);
+
+  const handlePageChange = (page) => {
+    if (page < 1 || page > Math.ceil(allItems.length / rowsPerPage)) return;
+    setPageLoading(true);
+    setTimeout(() => {
+      setCurrentPage(page);
+      const start = (page - 1) * rowsPerPage;
+      const end = start + rowsPerPage;
+      setPaginatedItems(allItems.slice(start, end));
+      setPageLoading(false);
+    }, 400);
+  };
+
+  useEffect(() => {
+    handlePageChange(1);
+  }, [allItems]);
+
   /* --------------------------- SUBMIT -------------------------- */
   const onSubmit = async (data) => {
     setServerError("");
-
     setIsLoading(true);
+
     try {
       const response = await login({
         email: data.email.trim().toLowerCase(),
@@ -51,21 +73,14 @@ const Login = () => {
         dispatch(setCart(userData.cart || []));
         dispatch(setWishlist(userData.wishlist || []));
 
-        if (rememberMe) {
-          localStorage.setItem("rememberMe", "true");
-        }
+        if (rememberMe) localStorage.setItem("rememberMe", "true");
 
         navigate(`/${userData.role}/dashboard`);
       } else {
         const message = response.message || "Unexpected error occurred.";
         const details = response.data;
 
-        if (
-          message.includes("pending verification") ||
-          message.includes("under review") ||
-          message.includes("rejected") ||
-          message.includes("banned")
-        ) {
+        if (message.includes("pending verification") || message.includes("under review") || message.includes("rejected") || message.includes("banned")) {
           let title = "Account Status";
           let type = "warning";
           let fullMessage = message;
@@ -73,23 +88,11 @@ const Login = () => {
           if (message.includes("banned")) {
             title = "Account Banned";
             type = "error";
-            if (details) {
-              fullMessage = `Your account has been banned.\n\nReason: ${details.reason}\nAction by: ${details.actionBy}${
-                details.actionDate
-                  ? `\nDate: ${new Date(details.actionDate).toLocaleString()}`
-                  : ""
-              }`;
-            }
+            if (details) fullMessage = `Your account has been banned.\n\nReason: ${details.reason}\nAction by: ${details.actionBy}${details.actionDate ? `\nDate: ${new Date(details.actionDate).toLocaleString()}` : ""}`;
           } else if (message.includes("rejected")) {
             title = "Account Rejected";
             type = "error";
-            if (details) {
-              fullMessage = `Your account verification was rejected.\n\nReason: ${details.reason}\nRejected by: ${details.actionBy}${
-                details.actionDate
-                  ? `\nDate: ${new Date(details.actionDate).toLocaleString()}`
-                  : ""
-              }`;
-            }
+            if (details) fullMessage = `Your account verification was rejected.\n\nReason: ${details.reason}\nRejected by: ${details.actionBy}${details.actionDate ? `\nDate: ${new Date(details.actionDate).toLocaleString()}` : ""}`;
           } else if (message.includes("pending") || message.includes("under review")) {
             type = "info";
           }
@@ -103,6 +106,7 @@ const Login = () => {
       console.error("Login error:", err);
       setServerError("An error occurred. Please try again later.");
     }
+
     setIsLoading(false);
   };
 
@@ -119,7 +123,7 @@ const Login = () => {
   }, [showSignupModal]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-purple-50 to-white bg-gray-50">
+    <div className="min-h-screen flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-purple-50 to-white bg-gray-50">
       <div className="max-w-md w-full">
 
         <AuthHeader
@@ -127,7 +131,6 @@ const Login = () => {
           subtitle={<span>Don't have an account? <button onClick={() => { setShowSignupModal(true); document.body.style.overflow='hidden'; }} className="font-medium text-purple-600 hover:text-purple-500">Sign up</button></span>}
         />
 
-        {/* ------------------------------- FORM ------------------------------ */}
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="bg-white p-8 rounded-xl shadow-lg space-y-6 animate-fade-in">
 
@@ -154,7 +157,6 @@ const Login = () => {
 
             <ErrorMessage message={serverError} />
 
-            {/* Remember Me */}
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <input
@@ -164,17 +166,13 @@ const Login = () => {
                   onChange={(e) => setRememberMe(e.target.checked)}
                   className="h-4 w-4 text-purple-600 border-gray-300 rounded cursor-pointer"
                 />
-                <label className="ml-2 text-sm text-gray-700 cursor-pointer">
-                  Remember me
-                </label>
+                <label className="ml-2 text-sm text-gray-700 cursor-pointer">Remember me</label>
               </div>
-
-              <a href="#" className="text-sm font-medium text-purple-600 hover:text-purple-500">
+              <Link to="/forgot-password" className="text-sm font-medium text-purple-600 hover:text-purple-500">
                 Forgot password?
-              </a>
+              </Link>
             </div>
 
-            {/* Login Button */}
             <button
               type="submit"
               disabled={isLoading}
@@ -187,32 +185,39 @@ const Login = () => {
           </div>
         </form>
 
+        {/* ------------------- Pagination Example ------------------- */}
+        {paginatedItems.length > 0 && (
+          <div className="mt-6 w-full">
+            {pageLoading ? (
+              <div className="text-center text-gray-500 py-4">Loading...</div>
+            ) : (
+              paginatedItems.map((item, idx) => (
+                <div key={idx} className="p-2 border-b border-gray-200">{item}</div>
+              ))
+            )}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={Math.ceil(allItems.length / rowsPerPage)}
+              onPageChange={handlePageChange}
+            />
+          </div>
+        )}
+
         {/* --------------------------- SIGNUP MODAL --------------------------- */}
         <div
           id="signupModal"
-          className={`fixed inset-0 bg-black/30 backdrop-blur-xs flex items-center justify-center z-50 ${
-            showSignupModal ? "" : "hidden"
-          }`}
+          className={`fixed inset-0 bg-black/30 backdrop-blur-xs flex items-center justify-center z-50 ${showSignupModal ? "" : "hidden"}`}
         >
           <div className="bg-white p-8 rounded-xl shadow-xl max-w-md w-full mx-4">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-2xl font-bold text-gray-900">Choose Account Type</h3>
-              <button
-                onClick={() => {
-                  setShowSignupModal(false);
-                  document.body.style.overflow = "auto";
-                }}
-                className="text-gray-400 hover:text-gray-600"
-              >
+              <button onClick={() => { setShowSignupModal(false); document.body.style.overflow = "auto"; }} className="text-gray-400 hover:text-gray-600">
                 <i className="fas fa-times text-xl"></i>
               </button>
             </div>
 
             <div className="space-y-4">
-              <a
-                href="/buyer/signup"
-                className="block p-4 border border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-all"
-              >
+              <Link to="/buyer/signup" className="block p-4 border border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-all">
                 <div className="flex items-center">
                   <i className="fas fa-user-tag text-2xl text-purple-600 mr-4"></i>
                   <div>
@@ -220,12 +225,9 @@ const Login = () => {
                     <p className="text-sm text-gray-600">Browse and purchase books</p>
                   </div>
                 </div>
-              </a>
+              </Link>
 
-              <a
-                href="/publisher/signup"
-                className="block p-4 border border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-all"
-              >
+              <Link to="/publisher/signup" className="block p-4 border border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-all">
                 <div className="flex items-center">
                   <i className="fas fa-book-open text-2xl text-purple-600 mr-4"></i>
                   <div>
@@ -233,12 +235,9 @@ const Login = () => {
                     <p className="text-sm text-gray-600">List and sell your books</p>
                   </div>
                 </div>
-              </a>
+              </Link>
 
-              <a
-                href="/manager/signup"
-                className="block p-4 border border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-all"
-              >
+              <Link to="/manager/signup" className="block p-4 border border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-all">
                 <div className="flex items-center">
                   <i className="fas fa-user-shield text-2xl text-purple-600 mr-4"></i>
                   <div>
@@ -246,12 +245,11 @@ const Login = () => {
                     <p className="text-sm text-gray-600">Manage platform operations</p>
                   </div>
                 </div>
-              </a>
+              </Link>
             </div>
           </div>
         </div>
 
-        {/* -------------------- ACCOUNT STATUS DIALOG ------------------------- */}
         <AlertDialog
           open={alertDialog.open}
           onOpenChange={(open) => setAlertDialog({ ...alertDialog, open })}
@@ -275,9 +273,9 @@ const Login = () => {
                 <p className="text-sm text-gray-600">
                   <i className="fas fa-question-circle mr-2"></i>
                   Need help? Contact{" "}
-                  <a href="mailto:support@publishelf.com" className="text-purple-600 underline">
+                  <Link to="/support" className="text-purple-600 underline">
                     support@publishelf.com
-                  </a>
+                  </Link>
                 </p>
               </div>
             )}
