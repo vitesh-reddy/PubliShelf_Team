@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 export const TermsCheckbox = ({ name='termsAccepted', register, rules, error, onBlurTrigger }) => {
   return (
     <div className="flex items-center relative">
