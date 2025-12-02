@@ -16,6 +16,121 @@ import Pagination from "../../../components/Pagination";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../../../components/ui/AlertDialog";
 import { firstnameRules, lastnameRules, emailRules, currentPasswordRules, newPasswordRules, confirmPasswordRules } from './profileValidation';
 
+// Skeleton components (using the provided SkeletonCard styles as reference)
+const SkeletonProfileHeader = () => (
+  <div className="bg-white rounded-xl shadow-md p-8 mb-8 border border-gray-200 skeleton-shimmer animate-fade-in">
+    <div className="flex items-center justify-between max-md:flex-col max-md:items-start gap-6">
+      <div className="flex items-center gap-6">
+        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200" />
+        <div className="space-y-3">
+          <div className="h-5 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-40" />
+          <div className="h-4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-64" />
+          <div className="h-3 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-32" />
+        </div>
+      </div>
+      <div className="flex gap-3 max-md:w-full max-md:mt-2">
+        <div className="h-10 flex-1 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-lg" />
+        <div className="h-10 flex-1 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-lg" />
+      </div>
+    </div>
+  </div>
+);
+
+const SkeletonAnalyticsGrid = () => (
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    {Array.from({ length: 4 }).map((_, idx) => (
+      <div
+        key={idx}
+        className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-purple-100 skeleton-shimmer animate-fade-in"
+      >
+        <div className="flex items-center justify-between">
+          <div className="space-y-3">
+            <div className="h-3 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-20" />
+            <div className="h-6 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-16" />
+            <div className="h-3 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-24" />
+          </div>
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200" />
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
+const SkeletonTabStrip = () => (
+  <div className="bg-white rounded-xl shadow-lg mb-6 p-2 skeleton-shimmer animate-fade-in">
+    <div className="flex gap-2 overflow-x-auto">
+      <div className="h-10 w-24 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-lg" />
+      <div className="h-10 w-28 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-lg" />
+      <div className="h-10 w-28 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-lg" />
+    </div>
+  </div>
+);
+
+const SkeletonOrderCard = () => (
+  <div className="flex gap-6 bg-gradient-to-r from-white to-purple-50 rounded-xl shadow-md p-6 border border-purple-100 skeleton-shimmer animate-fade-in max-md:flex-col">
+    <div className="w-32 h-44 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-lg" />
+    <div className="flex-1 space-y-4">
+      <div className="flex items-start justify-between">
+        <div className="h-4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-1/2" />
+        <div className="h-6 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-full w-24" />
+      </div>
+      <div className="grid grid-cols-2 gap-3 text-sm">
+        {Array.from({ length: 5 }).map((_, idx) => (
+          <div key={idx} className="space-y-2">
+            <div className="h-3 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-16" />
+            <div className="h-3 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-24" />
+          </div>
+        ))}
+      </div>
+      <div className="h-3 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-5/6" />
+    </div>
+  </div>
+);
+
+const SkeletonOrdersList = () => (
+  <div className="space-y-4">
+    {Array.from({ length: 3 }).map((_, idx) => (
+      <SkeletonOrderCard key={idx} />
+    ))}
+  </div>
+);
+
+const SkeletonWishlistCard = () => (
+  <div className="bg-white rounded-xl shadow-md p-4 border border-pink-100 skeleton-shimmer animate-fade-in">
+    <div className="w-full h-48 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-lg mb-3" />
+    <div className="h-4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-3/4 mb-2" />
+    <div className="h-3 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-1/2 mb-3" />
+    <div className="flex items-center justify-between">
+      <div className="h-4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-16" />
+      <div className="h-5 w-5 rounded-full bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200" />
+    </div>
+  </div>
+);
+
+const SkeletonWishlistGrid = () => (
+  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+    {Array.from({ length: 8 }).map((_, idx) => (
+      <SkeletonWishlistCard key={idx} />
+    ))}
+  </div>
+);
+
+const ProfilePageSkeleton = () => (
+  <div className="flex flex-col min-h-screen bg-gray-50 text-[#333] leading-[1.6] overflow-x-hidden">
+    <div className="max-w-7xl mt-20 mb-[20px] mx-auto px-4 sm:px-6 lg:px-8 py-4 w-full">
+      <SkeletonProfileHeader />
+      <SkeletonAnalyticsGrid />
+      <SkeletonTabStrip />
+      <div className="bg-white rounded-xl shadow-lg p-8 skeleton-shimmer animate-fade-in">
+        <div className="space-y-4">
+          <div className="h-5 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-40" />
+          <SkeletonOrdersList />
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
 const BuyerProfile = () => {
   const dispatch = useDispatch();
   const user = useUser();
@@ -33,6 +148,7 @@ const BuyerProfile = () => {
   const ordersPerPage = 5;
   const wishlistPerPage = 10;
   const [loadingPage, setLoadingPage] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(true);
 
   const {
     register,
@@ -65,6 +181,10 @@ const BuyerProfile = () => {
         }
       } catch (e) {
         console.error("Failed to load profile:", e);
+      } finally {
+        if (!ignore) {
+          setProfileLoading(false);
+        }
       }
     };
     load();
@@ -147,8 +267,18 @@ const BuyerProfile = () => {
   const getTimeAgo = (date) =>
     `Member since ${new Date(date).toLocaleString("en-US", { month: "long", year: "numeric" })}`;
 
+  // Initial profile skeleton while API is fetching
+  if (profileLoading) {
+    return <ProfilePageSkeleton />;
+  }
+
+  // Fallback if profile failed to load
   if (!user || !user._id)
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center text-gray-500">
+        Unable to load profile.
+      </div>
+    );
 
   const wishlist = wishlistItems || [];
   const formatCurrency = (amount) => `₹${parseFloat(amount || 0).toFixed(2)}`;
@@ -398,7 +528,7 @@ const BuyerProfile = () => {
               </h3>
 
               {loadingPage ? (
-                <div className="text-center py-16 text-gray-500">Loading orders...</div>
+                <SkeletonOrdersList />
               ) : pagedOrders.length > 0 ? (
                 <div className="space-y-4">
                   {pagedOrders
@@ -514,7 +644,7 @@ const BuyerProfile = () => {
               </h3>
 
               {loadingPage ? (
-                <div className="text-center py-16 text-gray-500">Loading wishlist...</div>
+                <SkeletonWishlistGrid />
               ) : pagedWishlist.length > 0 ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                   {pagedWishlist.map((book, idx) => (
