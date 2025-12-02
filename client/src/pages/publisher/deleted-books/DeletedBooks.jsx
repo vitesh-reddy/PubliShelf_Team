@@ -15,6 +15,24 @@ import {
 } from "../../../components/ui/AlertDialog";
 import Pagination from "../../../components/Pagination.jsx";
 
+// Skeleton Card Component
+const SkeletonCard = () => (
+  <div className="bg-white rounded-xl shadow-md overflow-hidden skeleton-shimmer animate-fade-in">
+    <div className="w-full h-[300px] bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200" />
+    <div className="p-4 space-y-3">
+      <div className="h-4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-3/4" />
+      <div className="h-3 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-1/2" />
+      <div className="flex justify-between items-center pt-2">
+        <div className="space-y-2">
+          <div className="h-4 w-16 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded" />
+          <div className="h-3 w-20 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded" />
+        </div>
+        <div className="h-7 w-7 rounded-full bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200" />
+      </div>
+    </div>
+  </div>
+);
+
 const DeletedBooks = () => {
   const [user, setUser] = useState({ firstname: "", lastname: "" });
   const [deletedBooks, setDeletedBooks] = useState([]);
@@ -77,7 +95,6 @@ const DeletedBooks = () => {
 
   const handlePageChange = (page) => {
     setPageLoading(true);
-    // Simulate random loading delay between 200-800ms
     const delay = Math.floor(Math.random() * 600) + 200;
     setTimeout(() => {
       setCurrentPage(page);
@@ -86,41 +103,38 @@ const DeletedBooks = () => {
     }, delay);
   };
 
-  // Compute current page books
   const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
   const endIndex = startIndex + ROWS_PER_PAGE;
   const currentBooks = deletedBooks.slice(startIndex, endIndex);
   const totalPages = Math.ceil(deletedBooks.length / ROWS_PER_PAGE);
 
-  if (loading) {
-    return (
-      <div className="bg-gray-50 min-h-screen">
-        <div className="flex items-center justify-center h-screen">
-          <div className="text-center">
-            <i className="fas fa-spinner fa-spin text-4xl text-purple-600 mb-4"></i>
-            <p className="text-gray-600">Loading books...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="bg-gray-50 min-h-screen">
       <div className="pb-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">Deleted Books</h1>
             <p className="text-gray-600 mt-1">{deletedBooks.length} deleted books</p>
           </div>
 
-          {/* Books Grid */}
-          {pageLoading ? (
-            <div className="flex items-center justify-center py-20">
-              <i className="fas fa-spinner fa-spin text-4xl text-purple-600"></i>
+          {/* INITIAL LOADING → SKELETON GRID */}
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {Array.from({ length: ROWS_PER_PAGE }).map((_, i) => (
+                <SkeletonCard key={i} />
+              ))}
+            </div>
+          ) : pageLoading ? (
+            /* PAGE CHANGE LOADING → SKELETON GRID */
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {Array.from({ length: ROWS_PER_PAGE }).map((_, i) => (
+                <SkeletonCard key={i} />
+              ))}
             </div>
           ) : currentBooks.length > 0 ? (
+            /* REAL BOOK DATA */
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {currentBooks.map((book) => (
                 <div
@@ -133,7 +147,7 @@ const DeletedBooks = () => {
                       alt={book.title}
                       className="w-full h-[300px] object-contain bg-white p-2 grayscale"
                     />
-                    
+
                     {/* Deleted Badge */}
                     <div className="absolute top-3 right-3">
                       <span className="bg-red-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
@@ -142,19 +156,17 @@ const DeletedBooks = () => {
                     </div>
                   </div>
 
-                  {/* Book Info */}
                   <div className="p-4">
                     <h3 className="font-bold text-gray-900 text-lg mb-1 line-clamp-2">
                       {book.title}
                     </h3>
                     <p className="text-sm text-gray-600 mb-2">by {book.author}</p>
-                    
+
                     <div className="flex items-center justify-between mb-4">
                       <span className="text-lg font-bold text-gray-500">₹{book.price}</span>
                       <span className="text-xs text-gray-500">{book.genre}</span>
                     </div>
 
-                    {/* Restore Button */}
                     <button
                       onClick={(e) => handleRestoreClick(book, e)}
                       disabled={actionLoading}
@@ -168,6 +180,7 @@ const DeletedBooks = () => {
               ))}
             </div>
           ) : (
+            /* NO DELETED BOOKS */
             <div className="text-center py-16">
               <i className="fas fa-trash-restore text-6xl text-gray-300 mb-4"></i>
               <h3 className="text-xl font-semibold text-gray-600 mb-2">No deleted books</h3>
