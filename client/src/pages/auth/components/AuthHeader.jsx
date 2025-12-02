@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 export const AuthHeader = ({ title, subtitle, children }) => {
   return (
     <div className="text-center mb-10">
