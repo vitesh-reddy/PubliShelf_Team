@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { getPendingPublishers, getActivePublishers, getBannedPublishers, approvePublisher, banPublisher, reinstatePublisher } from "../../../services/manager.services";
+import Pagination from "../../../components/ui/Pagination";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -20,6 +21,11 @@ const Publishers = ({ type = 'pending' }) => {
   const [actionType, setActionType] = useState("");
   const [actionReason, setActionReason] = useState("");
   const [banReasonDialog, setBanReasonDialog] = useState({ open: false, reason: "" });
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageLoading, setPageLoading] = useState(false);
+  const ITEMS_PER_PAGE = 6; // 3 rows × 2 cols
 
   const timeAgo = (date) => {
     if (!date) return '—';
@@ -67,6 +73,29 @@ const Publishers = ({ type = 'pending' }) => {
     loadPublishers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [type]);
+
+  // Reset to page 1 when type changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [type]);
+
+  // Pagination logic
+  const totalPages = Math.ceil(publishers.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedPublishers = publishers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  const handlePageChange = (page) => {
+    setPageLoading(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // Random delay between 300-600ms to simulate API fetch
+    const delay = Math.floor(Math.random() * 300) + 300;
+    
+    setTimeout(() => {
+      setCurrentPage(page);
+      setPageLoading(false);
+    }, delay);
+  };
 
   const handleAction = (publisher, action) => {
     setSelectedPublisher(publisher);
@@ -116,8 +145,41 @@ const Publishers = ({ type = 'pending' }) => {
           <p className="text-gray-500 text-lg">No {type} publishers found</p>
         </div>
       ) : (
-  <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
-          {publishers.map((publisher) => (
+        <>
+          {/* Skeleton Loading State */}
+          {pageLoading ? (
+            <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
+              {Array.from({ length: ITEMS_PER_PAGE }).map((_, idx) => (
+                <div key={idx} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden h-[340px] skeleton-shimmer animate-fade-in">
+                  <div className="flex gap-6 p-6 h-full">
+                    {/* Avatar skeleton */}
+                    <div className="flex-shrink-0">
+                      <div className="w-40 h-56 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-lg"></div>
+                    </div>
+                    {/* Content skeleton */}
+                    <div className="flex-1 min-w-0 flex flex-col">
+                      <div className="h-6 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-3/4 mb-2"></div>
+                      <div className="h-4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-full mb-3"></div>
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="h-5 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-full w-20"></div>
+                        <div className="h-4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-16"></div>
+                      </div>
+                      <div className="space-y-2 mb-4">
+                        <div className="h-4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-full"></div>
+                        <div className="h-4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-2/3"></div>
+                      </div>
+                      <div className="mt-auto flex gap-2">
+                        <div className="h-9 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-lg flex-1"></div>
+                        <div className="h-9 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-lg flex-1"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
+              {paginatedPublishers.map((publisher) => (
             <div key={publisher._id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow h-full">
               <div className={`flex gap-6 p-6 h-full w-full ${type === 'active' ? 'h-[320px]' : 'h-[340px]'}`}>
                 {/* Avatar block (like image) */}
@@ -227,8 +289,19 @@ const Publishers = ({ type = 'pending' }) => {
                 </div>
               </div>
             </div>
-          ))}
-        </div>
+            ))}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {publishers.length > ITEMS_PER_PAGE && !pageLoading && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
+          )}
+        </>
       )}
 
       {showActionModal && (

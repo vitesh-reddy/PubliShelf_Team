@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAllManagers, banManager, reinstateManager } from '../../../services/admin.services';
 import { toast } from 'sonner';
+import Pagination from '../../../components/ui/Pagination';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,6 +24,11 @@ const Managers = ({ type = 'pending' }) => {
   const [selectedManager, setSelectedManager] = useState(null);
   const [banReason, setBanReason] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageLoading, setPageLoading] = useState(false);
+  const ITEMS_PER_PAGE = 6; // 3 rows × 2 per row
 
   const fetchManagers = async () => {
     setLoading(true);
@@ -74,6 +80,29 @@ const Managers = ({ type = 'pending' }) => {
   };
 
   const filteredManagers = getFilteredManagers();
+
+  // Reset to page 1 when type changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [type]);
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredManagers.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedManagers = filteredManagers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  const handlePageChange = (page) => {
+    setPageLoading(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // Random delay between 300-600ms to simulate API fetch
+    const delay = Math.floor(Math.random() * 300) + 300;
+    
+    setTimeout(() => {
+      setCurrentPage(page);
+      setPageLoading(false);
+    }, delay);
+  };
 
   const handleBan = async () => {
     if (!banReason.trim() || !selectedManager) return;
@@ -127,8 +156,19 @@ const Managers = ({ type = 'pending' }) => {
           <p className="text-gray-500 text-lg">No {type} managers found</p>
         </div>
       ) : (
-            <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
-              {filteredManagers.map((manager) => {
+        <>
+          {/* Loading Overlay */}
+          {pageLoading && (
+            <div className="flex items-center justify-center py-16">
+              <div className="text-center">
+                <i className="fas fa-spinner fa-spin text-4xl text-purple-600 mb-4"></i>
+                <p className="text-gray-600">Loading page...</p>
+              </div>
+            </div>
+          )}
+
+          <div className={`grid gap-6 grid-cols-1 md:grid-cols-2 ${pageLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}>
+            {paginatedManagers.map((manager) => {
                 const isPending = manager.moderation?.status === 'pending';
                 const isActive = manager.moderation?.status === 'approved' && manager.account?.status === 'active';
                 const isBanned = manager.account?.status === 'banned';
@@ -252,8 +292,18 @@ const Managers = ({ type = 'pending' }) => {
                   </div>
                 );
               })}
-            </div>
+          </div>
+
+          {/* Pagination */}
+          {filteredManagers.length > ITEMS_PER_PAGE && !pageLoading && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
           )}
+        </>
+      )}
 
       {/* Ban Dialog */}
       <AlertDialog open={showBanDialog} onOpenChange={setShowBanDialog}>
