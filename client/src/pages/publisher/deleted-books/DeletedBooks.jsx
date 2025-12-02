@@ -3,7 +3,17 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { getDashboard, restoreBook } from "../../../services/publisher.services";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../../../components/ui/AlertDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from "../../../components/ui/AlertDialog";
+import Pagination from "../../../components/Pagination.jsx";
 
 const DeletedBooks = () => {
   const [user, setUser] = useState({ firstname: "", lastname: "" });
@@ -12,7 +22,11 @@ const DeletedBooks = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [showRestoreDialog, setShowRestoreDialog] = useState(false);
   const [selectedBook, setSelectedBook] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageLoading, setPageLoading] = useState(false);
   const navigate = useNavigate();
+
+  const ROWS_PER_PAGE = 8;
 
   useEffect(() => {
     loadBooks();
@@ -61,6 +75,23 @@ const DeletedBooks = () => {
     navigate(`/publisher/view-book/${bookId}`);
   };
 
+  const handlePageChange = (page) => {
+    setPageLoading(true);
+    // Simulate random loading delay between 200-800ms
+    const delay = Math.floor(Math.random() * 600) + 200;
+    setTimeout(() => {
+      setCurrentPage(page);
+      setPageLoading(false);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }, delay);
+  };
+
+  // Compute current page books
+  const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
+  const endIndex = startIndex + ROWS_PER_PAGE;
+  const currentBooks = deletedBooks.slice(startIndex, endIndex);
+  const totalPages = Math.ceil(deletedBooks.length / ROWS_PER_PAGE);
+
   if (loading) {
     return (
       <div className="bg-gray-50 min-h-screen">
@@ -85,9 +116,13 @@ const DeletedBooks = () => {
           </div>
 
           {/* Books Grid */}
-          {deletedBooks.length > 0 ? (
+          {pageLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <i className="fas fa-spinner fa-spin text-4xl text-purple-600"></i>
+            </div>
+          ) : currentBooks.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {deletedBooks.map((book) => (
+              {currentBooks.map((book) => (
                 <div
                   key={book._id}
                   className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden opacity-75 hover:opacity-100 transition-opacity"
@@ -138,6 +173,15 @@ const DeletedBooks = () => {
               <h3 className="text-xl font-semibold text-gray-600 mb-2">No deleted books</h3>
               <p className="text-gray-500">All your books are active</p>
             </div>
+          )}
+
+          {/* Pagination */}
+          {deletedBooks.length > ROWS_PER_PAGE && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
           )}
         </div>
       </div>
