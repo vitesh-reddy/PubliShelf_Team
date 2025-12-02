@@ -26,7 +26,6 @@ const AuctionOverview = () => {
 
   useEffect(() => {
     loadAuctionDetails();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const loadAuctionDetails = async () => {
@@ -53,7 +52,7 @@ const AuctionOverview = () => {
       const response = await approveAuction(id);
       if (response.success) {
         setShowApproveDialog(false);
-        navigate("/manager/dashboard?tab=auctions&type=approved", { 
+        navigate("/manager/auctions/pending", { 
           state: { message: "Auction approved successfully" }
         });
       } else {
@@ -78,7 +77,7 @@ const AuctionOverview = () => {
       const response = await rejectAuction(id, rejectionReason);
       if (response.success) {
         setShowRejectDialog(false);
-        navigate("/manager/dashboard?tab=auctions&type=rejected", {
+        navigate("/manager/auctions/pending", {
           state: { message: "Auction rejected successfully" }
         });
       } else {
@@ -145,7 +144,7 @@ const AuctionOverview = () => {
           <i className="fas fa-exclamation-circle text-6xl text-red-500 mb-4"></i>
           <p className="text-gray-700 text-lg mb-4">{error || "Auction not found"}</p>
           <button
-            onClick={() => navigate("/manager/dashboard?tab=auctions")}
+            onClick={() => navigate("/manager/auctions/pending")}
             className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700"
           >
             <i className="fas fa-arrow-left mr-2"></i>
@@ -156,11 +155,24 @@ const AuctionOverview = () => {
     );
   }
 
-  const authImages = Array.isArray(auction.authenticationImage) 
-    ? auction.authenticationImage 
-    : auction.authenticationImage 
-      ? [auction.authenticationImage] 
-      : [];
+  const buildAuthMedia = (a) => {
+    if (!a) return [];
+    const urls = [];
+    if (Array.isArray(a.authenticationImages)) urls.push(...a.authenticationImages);
+    if (a.authenticationImage) urls.push(a.authenticationImage);
+    if (Array.isArray(a.files)) urls.push(...a.files); // forward-compat for mixed files
+    const deduped = Array.from(new Set(urls.filter(Boolean)));
+    const getType = (u) => {
+      const ext = (u.split('?')[0].split('#')[0].split('.').pop() || '').toLowerCase();
+      if (["jpg","jpeg","png","webp","gif","svg","bmp","avif"].includes(ext)) return 'image';
+      if (["mp4","webm","ogg","mov","m4v"].includes(ext)) return 'video';
+      if (ext === 'pdf') return 'pdf';
+      // docx/xls etc treated as generic file
+      return 'file';
+    };
+    return deduped.map((u) => ({ url: u, type: getType(u) }));
+  };
+  const authMedia = buildAuthMedia(auction);
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -168,7 +180,7 @@ const AuctionOverview = () => {
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <button
-            onClick={() => navigate("/manager/dashboard?tab=auctions")}
+            onClick={() => navigate("/manager/auctions/pending")}
             className="text-gray-600 hover:text-gray-900 flex items-center gap-2"
           >
             <i className="fas fa-arrow-left"></i>
@@ -197,7 +209,7 @@ const AuctionOverview = () => {
           </div>
 
           <div className="p-8">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-[35%_65%] gap-8">
               {/* Left Column - Images */}
               <div className="space-y-6">
                 {/* Book Image */}
@@ -206,12 +218,12 @@ const AuctionOverview = () => {
                     <i className="fas fa-book text-purple-600"></i>
                     Book Image
                   </h3>
-                  <div className="rounded-lg overflow-hidden border-2 border-gray-200 shadow-md">
+                  <div className="flex items-center justify-center rounded-lg overflow-hidden border-2 border-gray-200 shadow-md">
                     {auction.image ? (
                       <img 
                         src={auction.image} 
                         alt={auction.title} 
-                        className="w-full h-96 object-contain bg-gray-50"
+                        className="w-[90%] h-auto object-cover bg-gray-50"
                       />
                     ) : (
                       <div className="w-full h-96 flex items-center justify-center bg-gray-100">
@@ -221,22 +233,51 @@ const AuctionOverview = () => {
                   </div>
                 </div>
 
-                {/* Authentication Images */}
-                {authImages.length > 0 && (
+                {/* Authentication Files (images inline, others open in new tab) */}
+                {authMedia.length > 0 && (
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
                       <i className="fas fa-certificate text-purple-600"></i>
                       Authentication Documents
                     </h3>
                     <div className="grid grid-cols-2 gap-4">
-                      {authImages.map((img, index) => (
-                        <div key={index} className="rounded-lg overflow-hidden border-2 border-gray-200 shadow-md">
-                          <img 
-                            src={img} 
-                            alt={`Authentication ${index + 1}`}
-                            className="w-full h-48 object-cover bg-gray-50 cursor-pointer hover:opacity-90 transition-opacity"
-                            onClick={() => window.open(img, '_blank')}
-                          />
+                      {authMedia.map((m, index) => (
+                        <div key={m.url + index} className="w-[85%] rounded-lg overflow-hidden border-2 border-gray-200 shadow-md">
+                          {m.type === 'image' ? (
+                            <img
+                              src={m.url}
+                              alt={`Authentication ${index + 1}`}
+                              className="mx-auto p-2 h-52 object-contain bg-gray-50 cursor-pointer hover:opacity-90 transition-opacity"
+                              onClick={() => window.open(`/file-viewer?url=${encodeURIComponent(m.url)}&title=${encodeURIComponent(auction.title)}`, '_blank')}
+                            />
+                          ) : m.type === 'video' ? (
+                            <div className="w-full h-48 bg-black text-white flex items-center justify-center">
+                              <button
+                                onClick={() => window.open(`/file-viewer?url=${encodeURIComponent(m.url)}&title=${encodeURIComponent(auction.title)}`, '_blank')}
+                                className="px-3 py-1 bg-purple-600 rounded text-sm hover:bg-purple-700"
+                              >
+                                Open Video
+                              </button>
+                            </div>
+                          ) : m.type === 'pdf' ? (
+                            <div className="p-2 h-52 bg-red-50 text-red-600 flex items-center justify-center">
+                              <button
+                                onClick={() => window.open(`/file-viewer?url=${encodeURIComponent(m.url)}&title=${encodeURIComponent(auction.title)}`, '_blank')}
+                                className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
+                              >
+                                Open PDF
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="p-2 w-[90%] h-52 bg-gray-100 text-gray-700 flex items-center justify-center">
+                              <button
+                                onClick={() => window.open(`/file-viewer?url=${encodeURIComponent(m.url)}&title=${encodeURIComponent(auction.title)}`, '_blank')}
+                                className="px-3 py-1 bg-gray-700 text-white rounded text-sm hover:bg-gray-800"
+                              >
+                                Open File
+                              </button>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
