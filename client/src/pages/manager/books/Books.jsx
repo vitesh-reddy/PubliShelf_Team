@@ -13,11 +13,9 @@ const Books = ({ type = 'pending' }) => {
   const [selectedBook, setSelectedBook] = useState(null);
   const [actionType, setActionType] = useState("");
   const [actionReason, setActionReason] = useState("");
-  
-  // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [pageLoading, setPageLoading] = useState(false);
-  const ITEMS_PER_PAGE = 9; // 3 rows × 3 cols
+  const ITEMS_PER_PAGE = 9;
 
   const loadBooks = async () => {
     setLoading(true);
@@ -84,7 +82,7 @@ const Books = ({ type = 'pending' }) => {
   const handlePageChange = (page) => {
     setPageLoading(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    const delay = Math.floor(Math.random() * 300) + 300; // 300-600ms delay
+    const delay = Math.floor(Math.random() * 800) + 200; // 300-600ms delay
     setTimeout(() => {
       setCurrentPage(page);
       setPageLoading(false);
@@ -124,10 +122,31 @@ const Books = ({ type = 'pending' }) => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <i className="fas fa-spinner fa-spin text-4xl text-purple-600 mb-4"></i>
-          <p className="text-gray-600">Loading books...</p>
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 9 }).map((_, idx) => (
+            <div key={idx} className="bg-white border border-gray-200 rounded-lg overflow-hidden skeleton-shimmer animate-fade-in">
+              {/* Image skeleton */}
+              <div className="h-48 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200"></div>
+              {/* Content skeleton */}
+              <div className="p-4 space-y-3">
+                <div className="h-6 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-3/4"></div>
+                <div className="h-4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-1/2"></div>
+                <div className="flex items-center gap-2">
+                  <div className="h-5 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-16"></div>
+                  <div className="h-5 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-12"></div>
+                </div>
+                <div className="space-y-2">
+                  <div className="h-3 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-full"></div>
+                  <div className="h-3 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-2/3"></div>
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <div className="h-9 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-lg flex-1"></div>
+                  <div className="h-9 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-lg flex-1"></div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -207,7 +226,7 @@ const Books = ({ type = 'pending' }) => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {paginatedFilteredBooks.map((book) => (
+              {paginatedBooks.map((book) => (
             <div key={book._id} className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
               <div className="h-48 bg-gray-200 relative">
                 {book.image ? (
@@ -302,10 +321,10 @@ const Books = ({ type = 'pending' }) => {
           
           {/* Pagination */}
           {filteredBooks.length > ITEMS_PER_PAGE && !pageLoading && (
-            <Pagination 
-              currentPage={currentPage} 
-              totalPages={totalPages} 
-              onPageChange={handlePageChange} 
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
             />
           )}
         </>

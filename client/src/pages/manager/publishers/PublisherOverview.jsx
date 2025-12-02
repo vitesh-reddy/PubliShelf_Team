@@ -94,10 +94,37 @@ const PublisherOverview = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <i className="fas fa-spinner fa-spin text-4xl text-purple-600 mb-4"></i>
-          <p className="text-gray-600">Loading publisher...</p>
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-5xl mx-auto px-4">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden skeleton-shimmer animate-fade-in">
+            <div className="p-8 space-y-6">
+              {/* Header skeleton */}
+              <div className="flex items-center gap-6">
+                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200"></div>
+                <div className="flex-1 space-y-3">
+                  <div className="h-8 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-1/2"></div>
+                  <div className="h-5 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-1/3"></div>
+                </div>
+              </div>
+              {/* Info skeleton */}
+              <div className="space-y-4 pt-6">
+                <div className="h-4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-full"></div>
+                <div className="h-4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-5/6"></div>
+                <div className="h-4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-4/5"></div>
+              </div>
+              {/* Stats skeleton */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-6">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="h-24 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-lg"></div>
+                ))}
+              </div>
+              {/* Actions skeleton */}
+              <div className="flex gap-3 pt-6">
+                <div className="h-10 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-lg flex-1"></div>
+                <div className="h-10 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-lg flex-1"></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );

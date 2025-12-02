@@ -74,7 +74,7 @@ const Publishers = ({ type = 'pending' }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [type]);
 
-  // Reset to page 1 when type changes
+  // Reset page when type changes
   useEffect(() => {
     setCurrentPage(1);
   }, [type]);
@@ -87,10 +87,7 @@ const Publishers = ({ type = 'pending' }) => {
   const handlePageChange = (page) => {
     setPageLoading(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    
-    // Random delay between 300-600ms to simulate API fetch
-    const delay = Math.floor(Math.random() * 300) + 300;
-    
+    const delay = Math.floor(Math.random() * 800) + 200; // 300-600ms delay
     setTimeout(() => {
       setCurrentPage(page);
       setPageLoading(false);
@@ -128,10 +125,35 @@ const Publishers = ({ type = 'pending' }) => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <i className="fas fa-spinner fa-spin text-4xl text-purple-600 mb-4"></i>
-          <p className="text-gray-600">Loading publishers...</p>
+      <div className="space-y-6">
+        <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
+          {Array.from({ length: 6 }).map((_, idx) => (
+            <div key={idx} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden h-[340px] skeleton-shimmer animate-fade-in">
+              <div className="flex gap-6 p-6 h-full">
+                {/* Avatar skeleton */}
+                <div className="flex-shrink-0">
+                  <div className="w-40 h-56 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-lg"></div>
+                </div>
+                {/* Content skeleton */}
+                <div className="flex-1 min-w-0 flex flex-col space-y-3">
+                  <div className="h-6 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-3/4"></div>
+                  <div className="h-4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-full"></div>
+                  <div className="flex items-center gap-3">
+                    <div className="h-5 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-full w-20"></div>
+                    <div className="h-4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-16"></div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-full"></div>
+                    <div className="h-4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-2/3"></div>
+                  </div>
+                  <div className="mt-auto flex gap-2 pt-2">
+                    <div className="h-9 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-lg flex-1"></div>
+                    <div className="h-9 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-lg flex-1"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -146,29 +168,27 @@ const Publishers = ({ type = 'pending' }) => {
         </div>
       ) : (
         <>
-          {/* Skeleton Loading State */}
+          {/* Skeleton Loading State for Pagination */}
           {pageLoading ? (
             <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
               {Array.from({ length: ITEMS_PER_PAGE }).map((_, idx) => (
                 <div key={idx} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden h-[340px] skeleton-shimmer animate-fade-in">
                   <div className="flex gap-6 p-6 h-full">
-                    {/* Avatar skeleton */}
                     <div className="flex-shrink-0">
                       <div className="w-40 h-56 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-lg"></div>
                     </div>
-                    {/* Content skeleton */}
-                    <div className="flex-1 min-w-0 flex flex-col">
-                      <div className="h-6 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-3/4 mb-2"></div>
-                      <div className="h-4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-full mb-3"></div>
-                      <div className="flex items-center gap-3 mb-3">
+                    <div className="flex-1 min-w-0 flex flex-col space-y-3">
+                      <div className="h-6 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-3/4"></div>
+                      <div className="h-4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-full"></div>
+                      <div className="flex items-center gap-3">
                         <div className="h-5 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-full w-20"></div>
                         <div className="h-4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-16"></div>
                       </div>
-                      <div className="space-y-2 mb-4">
+                      <div className="space-y-2">
                         <div className="h-4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-full"></div>
                         <div className="h-4 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded w-2/3"></div>
                       </div>
-                      <div className="mt-auto flex gap-2">
+                      <div className="mt-auto flex gap-2 pt-2">
                         <div className="h-9 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-lg flex-1"></div>
                         <div className="h-9 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 rounded-lg flex-1"></div>
                       </div>
@@ -289,7 +309,7 @@ const Publishers = ({ type = 'pending' }) => {
                 </div>
               </div>
             </div>
-            ))}
+              ))}
             </div>
           )}
 
