@@ -11,6 +11,7 @@ import {
   AlertDialogDescription,
   AlertDialogCancel,
 } from "../../../components/ui/AlertDialog";
+import Pagination from "../../../components/Pagination";
 
 const Auctions = () => {
   const [user, setUser] = useState({ firstname: "", lastname: "" });
@@ -19,9 +20,19 @@ const Auctions = () => {
   const [activeTab, setActiveTab] = useState('approved');
   const [rejectionDialog, setRejectionDialog] = useState({ open: false, reason: '' });
 
+  // Pagination states
+  const pageSize = 4; // x = number of rows per page (4 as requested)
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageLoading, setPageLoading] = useState(false);
+
   useEffect(() => {
     loadAuctions();
   }, []);
+
+  // Reset page to 1 when activeTab or auctions change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, auctions]);
 
   const loadAuctions = async () => {
     try {
@@ -65,6 +76,31 @@ const Auctions = () => {
     acc[status] = (acc[status] || 0) + 1;
     return acc;
   }, { approved: 0, pending: 0, rejected: 0 });
+
+  // Pagination calculations
+  const totalPages = Math.max(1, Math.ceil(filteredAuctions.length / pageSize));
+  const clampedPage = Math.min(Math.max(1, currentPage), totalPages);
+  const startIdx = (clampedPage - 1) * pageSize;
+  const endIdx = startIdx + pageSize;
+  const displayedAuctions = filteredAuctions.slice(startIdx, endIdx);
+
+  const handlePageChange = (newPage) => {
+    // sanitize newPage
+    const pageNumber = Math.min(Math.max(1, Number(newPage)), totalPages);
+    if (pageNumber === currentPage) return;
+
+    // Mock loading with small random delay (in ms)
+    const delay = Math.floor(Math.random() * (900 - 300 + 1)) + 300; // between 300ms and 900ms
+    setPageLoading(true);
+
+    setTimeout(() => {
+      setCurrentPage(pageNumber);
+      setPageLoading(false);
+      // scroll to top of list area (optional UX), keep DOM logic minimal and unobtrusive:
+      const container = document.querySelector('.max-w-7xl');
+      if (container) container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, delay);
+  };
 
   if (loading) {
     return (
@@ -124,97 +160,116 @@ const Auctions = () => {
 
           {/* Auctions List */}
           {filteredAuctions.length > 0 ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {filteredAuctions.map((auction) => {
-                const auctionStatus = getAuctionStatus(auction);
-                
-                return (
-                  <div
-                    key={auction._id}
-                    className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow"
-                  >
-                    <div className="flex gap-6 p-6">
-                      {/* Image */}
-                      <div className="flex-shrink-0">
-                        <div className="relative">
-                          <img
-                            src={auction.image}
-                            alt={auction.title}
-                            className="w-40 h-56 object-cover rounded-lg"
-                          />
-                          <div className="absolute top-2 right-2">
-                            <span className={`bg-${auctionStatus.color}-500 text-white text-xs font-semibold px-3 py-1 rounded-full shadow-lg`}>
-                              {auctionStatus.label}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-xl font-bold text-gray-900 mb-1">{auction.title}</h3>
-                        <p className="text-sm text-gray-600 mb-3">by {auction.author}</p>
-                        
-                        {/* Status pill */}
-                        <div className="mb-3">
-                          <span className={`text-xs px-2 py-1 rounded-full ${
-                            auction.status === 'approved' ? 'bg-green-100 text-green-700' :
-                            auction.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-red-100 text-red-700'
-                          }`}>
-                            {auction.status || 'approved'}
-                          </span>
-                        </div>
-                        
-                        {/* Details */}
-                        <div className="space-y-2 mb-4">
-                          <div className="flex items-center gap-2 text-sm">
-                            <i className="fas fa-tag text-purple-600 w-4"></i>
-                            <span className="text-gray-600">Genre:</span>
-                            <span className="font-medium text-gray-900">{auction.genre}</span>
-                          </div>
-                          
-                          <div className="flex items-center gap-2 text-sm">
-                            <i className="fas fa-certificate text-purple-600 w-4"></i>
-                            <span className="text-gray-600">Condition:</span>
-                            <span className="font-medium text-gray-900 capitalize">{auction.condition}</span>
-                          </div>
-
-                          <div className="flex items-center gap-2 text-sm">
-                            <i className="fas fa-rupee-sign text-purple-600 w-4"></i>
-                            <span className="text-gray-600">Base Price:</span>
-                            <span className="font-bold text-purple-600 text-lg">₹{auction.basePrice}</span>
-                          </div>
-                        </div>
-
-                        {/* Timeline */}
-                        <div className="border-t border-gray-200 pt-3 space-y-2">
-                          <div className="flex items-center gap-2 text-xs text-gray-600">
-                            <i className="fas fa-clock"></i>
-                            <span>Start: {formatDate(auction.auctionStart)}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-xs text-gray-600">
-                            <i className="fas fa-flag-checkered"></i>
-                            <span>End: {formatDate(auction.auctionEnd)}</span>
-                          </div>
-                        </div>
-
-                        {/* Rejection reason */}
-                        {auction.status === 'rejected' && auction.rejectionReason && (
-                          <button
-                            onClick={() => setRejectionDialog({ open: true, reason: auction.rejectionReason })}
-                            className="mt-3 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition-colors flex items-center gap-2"
-                          >
-                            <i className="fas fa-info-circle"></i>
-                            View Reason
-                          </button>
-                        )}
-                      </div>
+            <>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {pageLoading ? (
+                  // show a page-loading placeholder overlay while page loads
+                  <div className="col-span-1 lg:col-span-2 flex items-center justify-center py-24">
+                    <div className="text-center">
+                      <i className="fas fa-spinner fa-spin text-4xl text-purple-600 mb-4"></i>
+                      <p className="text-gray-600">Loading page...</p>
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                ) : (
+                  displayedAuctions.map((auction) => {
+                    const auctionStatus = getAuctionStatus(auction);
+                    
+                    return (
+                      <div
+                        key={auction._id}
+                        className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow"
+                      >
+                        <div className="flex gap-6 p-6">
+                          {/* Image */}
+                          <div className="flex-shrink-0">
+                            <div className="relative">
+                              <img
+                                src={auction.image}
+                                alt={auction.title}
+                                className="w-40 h-56 object-cover rounded-lg"
+                              />
+                              <div className="absolute top-2 right-2">
+                                <span className={`bg-${auctionStatus.color}-500 text-white text-xs font-semibold px-3 py-1 rounded-full shadow-lg`}>
+                                  {auctionStatus.label}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Info */}
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-xl font-bold text-gray-900 mb-1">{auction.title}</h3>
+                            <p className="text-sm text-gray-600 mb-3">by {auction.author}</p>
+                            
+                            {/* Status pill */}
+                            <div className="mb-3">
+                              <span className={`text-xs px-2 py-1 rounded-full ${
+                                auction.status === 'approved' ? 'bg-green-100 text-green-700' :
+                                auction.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-red-100 text-red-700'
+                              }`}>
+                                {auction.status || 'approved'}
+                              </span>
+                            </div>
+                            
+                            {/* Details */}
+                            <div className="space-y-2 mb-4">
+                              <div className="flex items-center gap-2 text-sm">
+                                <i className="fas fa-tag text-purple-600 w-4"></i>
+                                <span className="text-gray-600">Genre:</span>
+                                <span className="font-medium text-gray-900">{auction.genre}</span>
+                              </div>
+                              
+                              <div className="flex items-center gap-2 text-sm">
+                                <i className="fas fa-certificate text-purple-600 w-4"></i>
+                                <span className="text-gray-600">Condition:</span>
+                                <span className="font-medium text-gray-900 capitalize">{auction.condition}</span>
+                              </div>
+
+                              <div className="flex items-center gap-2 text-sm">
+                                <i className="fas fa-rupee-sign text-purple-600 w-4"></i>
+                                <span className="text-gray-600">Base Price:</span>
+                                <span className="font-bold text-purple-600 text-lg">₹{auction.basePrice}</span>
+                              </div>
+                            </div>
+
+                            {/* Timeline */}
+                            <div className="border-t border-gray-200 pt-3 space-y-2">
+                              <div className="flex items-center gap-2 text-xs text-gray-600">
+                                <i className="fas fa-clock"></i>
+                                <span>Start: {formatDate(auction.auctionStart)}</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-xs text-gray-600">
+                                <i className="fas fa-flag-checkered"></i>
+                                <span>End: {formatDate(auction.auctionEnd)}</span>
+                              </div>
+                            </div>
+
+                            {/* Rejection reason */}
+                            {auction.status === 'rejected' && auction.rejectionReason && (
+                              <button
+                                onClick={() => setRejectionDialog({ open: true, reason: auction.rejectionReason })}
+                                className="mt-3 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition-colors flex items-center gap-2"
+                              >
+                                <i className="fas fa-info-circle"></i>
+                                View Reason
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Pagination */}
+              <Pagination
+                currentPage={clampedPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+              />
+            </>
           ) : (
             <div className="text-center py-16">
               <i className="fas fa-gavel text-6xl text-gray-300 mb-4"></i>
