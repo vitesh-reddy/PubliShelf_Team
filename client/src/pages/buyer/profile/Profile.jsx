@@ -12,6 +12,7 @@ import { clearWishlist } from '../../../store/slices/wishlistSlice';
 import { useUser, useWishlist } from '../../../store/hooks';
 import { logout } from "../../../services/auth.services";
 import { useForm } from "react-hook-form";
+import Pagination from "../../../components/Pagination";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../../../components/ui/AlertDialog";
 import { firstnameRules, lastnameRules, emailRules, currentPasswordRules, newPasswordRules, confirmPasswordRules } from './profileValidation';
 
@@ -27,13 +28,19 @@ const BuyerProfile = () => {
   const saveBtnRef = useRef(null);
   const navigate = useNavigate();
 
+  const [orderPage, setOrderPage] = useState(1);
+  const [wishlistPage, setWishlistPage] = useState(1);
+  const ordersPerPage = 5;
+  const wishlistPerPage = 10;
+  const [loadingPage, setLoadingPage] = useState(false);
+
   const {
     register,
     handleSubmit,
     reset,
     watch,
     formState: { errors, touchedFields, isSubmitted }
-  } = useForm({ 
+  } = useForm({
     mode: "onBlur",
     reValidateMode: "onChange"
   });
@@ -63,7 +70,7 @@ const BuyerProfile = () => {
     load();
     return () => { ignore = true; };
   }, [dispatch]);
-  
+
   useEffect(() => {
     if (user?._id) {
       reset({
@@ -120,17 +127,10 @@ const BuyerProfile = () => {
     }
   };
 
-  const handleLogout = () => {
-    setShowLogoutDialog(true);
-  };
+  const handleLogout = () => setShowLogoutDialog(true);
 
   const confirmLogout = async () => {
-    try {
-      await logout();
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
-    // Clear all Redux stores
+    try { await logout(); } catch {}
     dispatch(clearAuth());
     dispatch(clearUser());
     dispatch(clearCart());
@@ -144,28 +144,48 @@ const BuyerProfile = () => {
     reset();
   };
 
-  const getTimeAgo = (date) => {
-    return `Member since ${new Date(date).toLocaleString("en-US", { month: "long", year: "numeric" })}`;
-  };
+  const getTimeAgo = (date) =>
+    `Member since ${new Date(date).toLocaleString("en-US", { month: "long", year: "numeric" })}`;
 
-  console.log(user);
-  if (!user || !user._id) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (!user || !user._id)
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
 
   const wishlist = wishlistItems || [];
-
   const formatCurrency = (amount) => `₹${parseFloat(amount || 0).toFixed(2)}`;
   const formatMonth = (monthStr) => {
-    if (!monthStr) return '';
-    const [year, month] = monthStr.split('-');
+    if (!monthStr) return "";
+    const [year, month] = monthStr.split("-");
     const date = new Date(year, parseInt(month) - 1);
-    return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    return date.toLocaleDateString("en-US", { month: "short", year: "numeric" });
   };
+
+  // ⬅️ pagination logic with random delay
+  const changeOrderPage = (page) => {
+    setLoadingPage(true);
+    setTimeout(() => {
+      setOrderPage(page);
+      setLoadingPage(false);
+    }, Math.floor(Math.random() * (800 - 200 + 1)) + 200);
+  };
+
+  const changeWishlistPage = (page) => {
+    setLoadingPage(true);
+    setTimeout(() => {
+      setWishlistPage(page);
+      setLoadingPage(false);
+    }, Math.floor(Math.random() * (800 - 200 + 1)) + 200);
+  };
+
+  const orderStart = (orderPage - 1) * ordersPerPage;
+  const wishlistStart = (wishlistPage - 1) * wishlistPerPage;
+  const pagedOrders = orders.slice(orderStart, orderStart + ordersPerPage);
+  const pagedWishlist = wishlist.slice(wishlistStart, wishlistStart + wishlistPerPage);
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 text-[#333] leading-[1.6] overflow-x-hidden">
-      
       <div className="max-w-7xl mt-20 mb-[20px] mx-auto px-4 sm:px-6 lg:px-8 py-4 w-full">
-        {/* Header Section */}
+        
+        {/* --- PROFILE HEADER --- */}
         <div className="bg-white rounded-xl shadow-md p-8 mb-8 border border-gray-200">
           <div className="flex items-center justify-between max-md:flex-col max-md:items-start">
             <div className="flex items-center gap-6">
@@ -183,8 +203,7 @@ const BuyerProfile = () => {
                 className="px-6 py-2.5 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors duration-200"
                 onClick={() => setShowEditDialog(true)}
               >
-                <i className="fas fa-edit mr-2"></i>
-                Edit Profile
+                <i className="fas fa-edit mr-2"></i>Edit Profile
               </button>
               <button
                 className="px-6 py-2.5 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition-colors duration-200"
@@ -196,9 +215,10 @@ const BuyerProfile = () => {
           </div>
         </div>
 
-        {/* Analytics Cards */}
+        {/* --- ANALYTICS CARDS --- */}
         {analytics && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {/* total orders */}
             <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-purple-500 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
               <div className="flex items-center justify-between">
                 <div>
@@ -207,13 +227,12 @@ const BuyerProfile = () => {
                   <p className="text-green-600 text-xs mt-2 font-medium">{analytics.deliveredOrders} delivered</p>
                 </div>
                 <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center">
-                  <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                  </svg>
+                  <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
                 </div>
               </div>
             </div>
 
+            {/* total spent */}
             <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
               <div className="flex items-center justify-between">
                 <div>
@@ -222,13 +241,12 @@ const BuyerProfile = () => {
                   <p className="text-gray-600 text-xs mt-2 font-medium">Avg: {formatCurrency(analytics.averageOrderValue)}</p>
                 </div>
                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-                  <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+                  <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 </div>
               </div>
             </div>
 
+            {/* books purchased */}
             <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
               <div className="flex items-center justify-between">
                 <div>
@@ -237,13 +255,12 @@ const BuyerProfile = () => {
                   <p className="text-blue-600 text-xs mt-2 font-medium">{analytics.pendingOrders} pending</p>
                 </div>
                 <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-                  <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
+                  <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
                 </div>
               </div>
             </div>
 
+            {/* wishlist */}
             <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-pink-500 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
               <div className="flex items-center justify-between">
                 <div>
@@ -252,76 +269,44 @@ const BuyerProfile = () => {
                   <p className="text-pink-600 text-xs mt-2 font-medium">Saved for later</p>
                 </div>
                 <div className="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center">
-                  <svg className="w-8 h-8 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                  </svg>
+                  <svg className="w-8 h-8 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Tabs Navigation */}
+        {/* --- TABS BUTTONS --- */}
         <div className="bg-white rounded-xl shadow-lg mb-6 p-2">
           <div className="flex gap-2 overflow-x-auto">
-            <button
-              onClick={() => setActiveTab('overview')}
-              className={`px-6 py-3 rounded-lg font-semibold transition-all duration-300 whitespace-nowrap ${
-                activeTab === 'overview'
-                  ? 'bg-purple-600 text-white shadow-lg'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              Overview
-            </button>
-            <button
-              onClick={() => setActiveTab('orders')}
-              className={`px-6 py-3 rounded-lg font-semibold transition-all duration-300 whitespace-nowrap ${
-                activeTab === 'orders'
-                  ? 'bg-purple-600 text-white shadow-lg'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              Orders ({orders.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('wishlist')}
-              className={`px-6 py-3 rounded-lg font-semibold transition-all duration-300 whitespace-nowrap ${
-                activeTab === 'wishlist'
-                  ? 'bg-purple-600 text-white shadow-lg'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              Wishlist ({wishlist.length})
-            </button>
+            <button onClick={() => setActiveTab('overview')} className={`px-6 py-3 rounded-lg font-semibold transition-all duration-300 whitespace-nowrap ${activeTab === 'overview' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-600 hover:bg-gray-100'}`}>Overview</button>
+            <button onClick={() => setActiveTab('orders')} className={`px-6 py-3 rounded-lg font-semibold transition-all duration-300 whitespace-nowrap ${activeTab === 'orders' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-600 hover:bg-gray-100'}`}>Orders ({orders.length})</button>
+            <button onClick={() => setActiveTab('wishlist')} className={`px-6 py-3 rounded-lg font-semibold transition-all duration-300 whitespace-nowrap ${activeTab === 'wishlist' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-600 hover:bg-gray-100'}`}>Wishlist ({wishlist.length})</button>
           </div>
         </div>
 
-        {/* Tab Content */}
+        {/* --- TAB CONTENT BOX --- */}
         <div className="bg-white rounded-xl shadow-lg p-8">
+
           {/* Overview Tab */}
           {activeTab === 'overview' && analytics && (
             <div className="space-y-8">
+              {/* favorite genre & spending */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Favorite Genres */}
+                {/* favorite genres */}
                 <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
                   <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                    <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
+                    <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
                     Favorite Genres
                   </h3>
-                  {analytics.favoriteGenres && analytics.favoriteGenres.length > 0 ? (
+                  {analytics.favoriteGenres?.length > 0 ? (
                     <div className="space-y-3">
                       {analytics.favoriteGenres.slice(0, 3).map((item, idx) => (
                         <div key={idx} className="flex items-center justify-between">
                           <span className="text-gray-700 font-medium capitalize">{item._id}</span>
                           <div className="flex items-center gap-3">
                             <div className="w-32 bg-gray-200 rounded-full h-2">
-                              <div
-                                className="bg-purple-600 h-2 rounded-full transition-all duration-500"
-                                style={{ width: `${(item.count / analytics.favoriteGenres[0].count) * 100}%` }}
-                              ></div>
+                              <div className="bg-purple-600 h-2 rounded-full transition-all duration-500" style={{ width: `${(item.count / analytics.favoriteGenres[0].count) * 100}%` }}></div>
                             </div>
                             <span className="text-purple-600 font-bold text-sm w-8">{item.count}</span>
                           </div>
@@ -333,15 +318,13 @@ const BuyerProfile = () => {
                   )}
                 </div>
 
-                {/* Monthly Spending */}
+                {/* monthly spending */}
                 <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
                   <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                    <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
-                    </svg>
+                    <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" /></svg>
                     Spending Trends
                   </h3>
-                  {analytics.monthlySpending && analytics.monthlySpending.length > 0 ? (
+                  {analytics.monthlySpending?.length > 0 ? (
                     <div className="space-y-2">
                       {analytics.monthlySpending.map((item, idx) => (
                         <div key={idx} className="flex items-center justify-between text-sm">
@@ -356,15 +339,13 @@ const BuyerProfile = () => {
                 </div>
               </div>
 
-              {/* Recent Activity */}
+              {/* recent activity */}
               <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
                 <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                   Recent Activity
                 </h3>
-                {analytics.recentActivity && analytics.recentActivity.length > 0 ? (
+                {analytics.recentActivity?.length > 0 ? (
                   <div className="space-y-3">
                     {analytics.recentActivity.map((activity, idx) => (
                       <div key={idx} className="flex items-start justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
@@ -372,15 +353,20 @@ const BuyerProfile = () => {
                           <div className="flex items-center gap-2 mb-1">
                             <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
                             <span className="text-gray-700 font-medium">
-                              {activity.books && activity.books.length > 0 ? (
-                                activity.books.length === 1 ? activity.books[0] : `${activity.books[0]} +${activity.books.length - 1} more`
-                              ) : (
-                                `${activity.itemCount} item(s)`
-                              )}
+                              {activity.books?.length > 0
+                                ? activity.books.length === 1
+                                  ? activity.books[0]
+                                  : `${activity.books[0]} +${activity.books.length - 1} more`
+                                : `${activity.itemCount} item(s)`
+                              }
                             </span>
                           </div>
                           <span className="text-gray-500 text-xs ml-4">
-                            {new Date(activity.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            {new Date(activity.date).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })}
                           </span>
                         </div>
                         <div className="flex items-center gap-3">
@@ -410,9 +396,12 @@ const BuyerProfile = () => {
                 </svg>
                 Your Orders
               </h3>
-              {orders && orders.length > 0 ? (
+
+              {loadingPage ? (
+                <div className="text-center py-16 text-gray-500">Loading orders...</div>
+              ) : pagedOrders.length > 0 ? (
                 <div className="space-y-4">
-                  {orders
+                  {pagedOrders
                     .filter((order) => order.book)
                     .map((order) => (
                       <div
@@ -427,12 +416,17 @@ const BuyerProfile = () => {
                         />
                         <div className="flex-1">
                           <div className="flex items-start justify-between mb-3">
-                            <h4 className="text-xl font-bold text-purple-700 hover:text-purple-900 cursor-pointer" onClick={() => navigate(`/buyer/product-detail/${order.book._id}`)}>
+                            <h4
+                              className="text-xl font-bold text-purple-700 hover:text-purple-900 cursor-pointer"
+                              onClick={() => navigate(`/buyer/product-detail/${order.book._id}`)}
+                            >
                               {order.book.title}
                             </h4>
-                            <span className={`px-4 py-1 rounded-full text-sm font-semibold ${
-                              order.delivered ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                            }`}>
+                            <span
+                              className={`px-4 py-1 rounded-full text-sm font-semibold ${
+                                order.delivered ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
+                              }`}
+                            >
                               {order.delivered ? "Delivered" : "Pending"}
                             </span>
                           </div>
@@ -465,7 +459,9 @@ const BuyerProfile = () => {
                             </div>
                           </div>
                           {order.book.description && (
-                            <p className="mt-3 text-sm text-gray-600 line-clamp-2">{order.book.description}</p>
+                            <p className="mt-3 text-sm text-gray-600 line-clamp-2">
+                              {order.book.description}
+                            </p>
                           )}
                         </div>
                       </div>
@@ -473,33 +469,55 @@ const BuyerProfile = () => {
                 </div>
               ) : (
                 <div className="text-center py-16">
-                  <svg className="w-24 h-24 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    className="w-24 h-24 text-gray-300 mx-auto mb-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                   </svg>
                   <p className="text-gray-500 text-lg">No orders yet</p>
                   <button
-                    onClick={() => navigate('/buyer/dashboard')}
+                    onClick={() => navigate("/buyer/dashboard")}
                     className="mt-4 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                   >
                     Start Shopping
                   </button>
                 </div>
               )}
+
+              {/* Pagination for orders */}
+              {orders.length > ordersPerPage && (
+                <Pagination
+                  currentPage={orderPage}
+                  totalPages={Math.ceil(orders.length / ordersPerPage)}
+                  onPageChange={changeOrderPage}
+                />
+              )}
             </div>
           )}
 
           {/* Wishlist Tab */}
-          {activeTab === 'wishlist' && (
+          {activeTab === "wishlist" && (
             <div>
               <h3 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
                 <svg className="w-7 h-7 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                  />
                 </svg>
                 Your Wishlist
               </h3>
-              {wishlist && wishlist.length > 0 ? (
+
+              {loadingPage ? (
+                <div className="text-center py-16 text-gray-500">Loading wishlist...</div>
+              ) : pagedWishlist.length > 0 ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                  {wishlist.map((book, idx) => (
+                  {pagedWishlist.map((book, idx) => (
                     <div
                       key={book._id + idx}
                       className="bg-white rounded-xl shadow-md p-4 hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border border-pink-100 cursor-pointer"
@@ -510,13 +528,19 @@ const BuyerProfile = () => {
                         alt={book.title}
                         className="w-full h-48 object-cover rounded-lg mb-3"
                       />
-                      <h4 className="text-purple-700 font-semibold text-sm mb-1 line-clamp-2">{book.title}</h4>
+                      <h4 className="text-purple-700 font-semibold text-sm mb-1 line-clamp-2">
+                        {book.title}
+                      </h4>
                       <p className="text-gray-600 text-xs mb-2 line-clamp-1">{book.author}</p>
                       <div className="flex items-center justify-between">
                         <p className="text-pink-600 font-bold text-sm">₹{book.price || 0}</p>
                         <button className="text-pink-600 hover:text-pink-700">
                           <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+                            <path
+                              fillRule="evenodd"
+                              d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"
+                              clipRule="evenodd"
+                            />
                           </svg>
                         </button>
                       </div>
@@ -525,24 +549,38 @@ const BuyerProfile = () => {
                 </div>
               ) : (
                 <div className="text-center py-16">
-                  <svg className="w-24 h-24 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    className="w-24 h-24 text-gray-300 mx-auto mb-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                   </svg>
                   <p className="text-gray-500 text-lg">Your wishlist is empty</p>
                   <button
-                    onClick={() => navigate('/buyer/dashboard')}
+                    onClick={() => navigate("/buyer/dashboard")}
                     className="mt-4 px-6 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors"
                   >
                     Discover Books
                   </button>
                 </div>
               )}
+
+              {/* Pagination for wishlist */}
+              {wishlist.length > wishlistPerPage && (
+                <Pagination
+                  currentPage={wishlistPage}
+                  totalPages={Math.ceil(wishlist.length / wishlistPerPage)}
+                  onPageChange={changeWishlistPage}
+                />
+              )}
             </div>
           )}
         </div>
       </div>
 
-      {/* Edit Profile Dialog */}
+      {/* -------- Edit Profile Dialog + Logout Dialog -------- */}
       {showEditDialog && (
         <div
           className="fixed inset-0 bg-black/10 backdrop-blur-[1px] flex items-center justify-center z-[100] p-4"
@@ -553,7 +591,6 @@ const BuyerProfile = () => {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-6">
-              {/* Header */}
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">Edit Profile</h2>
                 <button
@@ -564,10 +601,7 @@ const BuyerProfile = () => {
                 </button>
               </div>
 
-              {/* Form */}
               <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
-
-                {/* First Name */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
                   <input
@@ -579,7 +613,6 @@ const BuyerProfile = () => {
                   )}
                 </div>
 
-                {/* Last Name */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
                   <input
@@ -591,7 +624,6 @@ const BuyerProfile = () => {
                   )}
                 </div>
 
-                {/* Email */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                   <input
@@ -603,7 +635,6 @@ const BuyerProfile = () => {
                   )}
                 </div>
 
-                {/* Current Password */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
                   <input
@@ -616,8 +647,7 @@ const BuyerProfile = () => {
                   )}
                 </div>
 
-                {/* Change Password */}
-                <div className="border-t pt-4">
+                <div className="border-t border-gray-300 pt-4">
                   <p className="text-sm font-medium text-gray-700 mb-2">Change Password (Optional)</p>
 
                   <div className="space-y-3">
@@ -647,7 +677,6 @@ const BuyerProfile = () => {
                   </div>
                 </div>
 
-                {/* Buttons */}
                 <div className="flex gap-3 pt-4">
                   <button
                     type="button"
@@ -664,9 +693,7 @@ const BuyerProfile = () => {
                     Save Changes
                   </button>
                 </div>
-
               </form>
-
             </div>
           </div>
         </div>
@@ -690,9 +717,8 @@ const BuyerProfile = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      
     </div>
   );
 };
 
-export default BuyerProfile;  
+export default BuyerProfile;
