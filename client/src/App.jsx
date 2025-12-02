@@ -4,10 +4,12 @@ import PublicRoutes from './routes/PublicRoutes'
 import ProtectedRoutes from './routes/ProtectedRoutes'
 import PublicOnlyRoutes from './routes/PublicOnlyRoutes'
 import ToastProvider from './components/ToastProvider'
+import EntryAnimation from './components/EntryAnimation.jsx'
 
 const App = () => {
   return (
     <div>
+      <EntryAnimation />
       <ToastProvider />
       <Routes>
         {/* Can be accessed by any users */}
