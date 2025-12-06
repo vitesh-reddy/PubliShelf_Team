@@ -1,5 +1,105 @@
 @import "tailwindcss";
 
+:root {
+  /* ----------------------------------------------------
+     CYAN BRAND (UNCHANGED)
+  ---------------------------------------------------- */
+
+  --color-cyanbrand-50:  #eef7fb;
+  --color-cyanbrand-100: #d9ecf4;
+  --color-cyanbrand-200: #b9dbea;
+  --color-cyanbrand-300: #96c7da;
+  --color-cyanbrand-400: #6baac4;
+  --color-cyanbrand-500: #4f8ca8;
+  --color-cyanbrand-600: #385460;
+  --color-cyanbrand-700: #304a55;
+  --color-cyanbrand-800: #263a42;
+  --color-cyanbrand-900: #1c2c33;
+
+  /* ----------------------------------------------------
+     ACCENTS (UNCHANGED)
+  ---------------------------------------------------- */
+  --color-accent-orange: #cf4b00;
+  --color-accent-gold:   #ddba7d;
+  --color-background-cream: #fcf6d9;
+
+  /* ----------------------------------------------------
+     UPDATED WARM NEUTRAL BACKGROUND + TEXT
+     Brighter backgrounds + slightly darker text overlay
+  ---------------------------------------------------- */
+
+  /* Brighter backgrounds (lightened neutrals) */
+  --color-neutral-50:   #fdfbf8;  /* brighter */
+  --color-neutral-100:  #f7f3ee;  /* brighter */
+  --color-neutral-200:  #ece5dc;  /* brighter */
+  --color-neutral-300:  #dcd3c5;  /* brighter */
+
+  /* Foreground (kept similar) */
+  --color-neutral-400:  #b9a99b;
+
+  /* Slightly darker text on backgrounds */
+  --color-neutral-500:  #8a7b70;  /* bit darker */
+  --color-neutral-600:  #6d6057;  /* bit darker */
+  --color-neutral-700:  #544942;  /* bit darker */
+  --color-neutral-800:  #3d3531;  /* bit darker */
+  --color-neutral-900:  #292523;  /* bit darker */
+
+  /* ----------------------------------------------------
+     REMOVE ALL GRADIENTS
+  ---------------------------------------------------- */
+  --tw-gradient-from: transparent !important;
+  --tw-gradient-to: transparent !important;
+  --tw-gradient-stops: transparent, transparent !important;
+
+  --gradient-from: transparent !important;
+  --gradient-to: transparent !important;
+  --gradient-stops: transparent, transparent !important;
+}
+
+/* ----------------------------------------------------
+   TAILWIND OVERRIDES
+---------------------------------------------------- */
+
+:root {
+  /* PURPLE → CYANBRAND */
+  --color-purple-50:  var(--color-cyanbrand-50);
+  --color-purple-100: var(--color-cyanbrand-100);
+  --color-purple-200: var(--color-cyanbrand-200);
+  --color-purple-300: var(--color-cyanbrand-300);
+  --color-purple-400: var(--color-cyanbrand-400);
+  --color-purple-500: var(--color-cyanbrand-500);
+  --color-purple-600: var(--color-cyanbrand-600);
+  --color-purple-700: var(--color-cyanbrand-700);
+  --color-purple-800: var(--color-cyanbrand-800);
+  --color-purple-900: var(--color-cyanbrand-900);
+
+  /* INDIGO → CYANBRAND */
+  --color-indigo-50:  var(--color-cyanbrand-50);
+  --color-indigo-100: var(--color-cyanbrand-100);
+  --color-indigo-200: var(--color-cyanbrand-200);
+  --color-indigo-300: var(--color-cyanbrand-300);
+  --color-indigo-400: var(--color-cyanbrand-400);
+  --color-indigo-500: var(--color-cyanbrand-500);
+  --color-indigo-600: var(--color-cyanbrand-600);
+  --color-indigo-700: var(--color-cyanbrand-700);
+  --color-indigo-800: var(--color-cyanbrand-800);
+  --color-indigo-900: var(--color-cyanbrand-900);
+
+  /* GRAY → UPDATED NEUTRALS */
+  --color-gray-50:  var(--color-neutral-50);
+  --color-gray-100: var(--color-neutral-100);
+  --color-gray-200: var(--color-neutral-200);
+  --color-gray-300: var(--color-neutral-300);
+  --color-gray-400: var(--color-neutral-400);
+  --color-gray-500: var(--color-neutral-500);
+  --color-gray-600: var(--color-neutral-600);
+  --color-gray-700: var(--color-neutral-700);
+  --color-gray-800: var(--color-neutral-800);
+  --color-gray-900: var(--color-neutral-900);
+}
+
+
+
 * {
   scrollbar-width: none !important; 
 }
