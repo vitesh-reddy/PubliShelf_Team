@@ -43,7 +43,7 @@ const Overview = () => {
   }, []);
 
   const KPICard = ({ icon, label, value, color }) => (
-    <div className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+    <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 hover:-translate-y-[2px]">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm text-gray-600 mb-1">{label}</p>

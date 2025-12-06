@@ -1,4 +1,3 @@
-//server.js
 import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
@@ -14,34 +13,29 @@ import morgan from "morgan";
 import Book from "./models/Book.model.js";
 import { getMetrics, getTopSoldBooks, getTrendingBooks } from "./services/buyer.services.js";
 
-console.clear();
-
 dotenv.config();
 const PORT = process.env.PORT || 3000;
-const app = express();
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/";
+const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:5173";
 
 connectDB(MONGODB_URI);
 
-app.use(morgan("tiny", {
-  skip: (req) => req.url.match(/\.(css|js|png|jpg|ico|svg|woff2?)$/)
-}));
+const app = express();
+app.use(morgan("tiny", {skip: (req) => req.url.match(/\.(css|js|png|jpg|ico|svg|woff2?)$/)}));
 
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true, limit: "5mb" }));
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 
-app.use(cors({ origin: "http://localhost:5173", credentials: true,}));
+app.use(cors({ origin: CLIENT_URL, credentials: true,}));
 
-// API routes with /api prefix
 app.use("/api/buyer", buyerRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/publisher", publisherRoutes);
 app.use("/api/manager", managerRoutes);
 app.use("/api/auth", authRoutes);
 
-// Home data API endpoint for landing page
 app.get("/api/home/data", async (req, res) => {
   try {    
     const newlyBooks = await Book.find({ isDeleted: { $ne: true } })
@@ -66,17 +60,28 @@ app.get("/api/home/data", async (req, res) => {
   }
 });
 
-// Logout endpoint (POST for API consistency)
 app.post("/api/logout", (req, res) => {
+  const sameSite = process.env.NODE_ENV === 'production' ? 'none' : 'lax';
   res.clearCookie("token", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+    sameSite,
   });
   res.status(200).json({
     success: true,
     message: "Logged out successfully",
     data: null
+  });
+});
+
+app.get(["/ready", "/health", "/api/ready"], (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "READY",
+    data: {
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime()
+    }
   });
 });
 

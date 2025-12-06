@@ -1,10 +1,10 @@
-import { Navigate, Outlet } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../store/hooks';
 import verifyAuth from '../utils/verifyAuth.util';
 
-const ProtectedRoute = ({ allowedRoles }) => {
-  const { isAuthenticated, role } = useAuth();
+const PublicRoute = () => {
+  const { isAuthenticated } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -27,16 +27,7 @@ const ProtectedRoute = ({ allowedRoles }) => {
     );
   }
 
-  if (!isAuthenticated) {
-    return <Navigate to="/auth/login" replace />;
-  }
-
-  // Check if user has required role
-  if (allowedRoles && !allowedRoles.includes(role)) {
-    return <Navigate to="/auth/login" replace />;
-  }
-
   return <Outlet />;
 };
 
-export default ProtectedRoute;
+export default PublicRoute;
